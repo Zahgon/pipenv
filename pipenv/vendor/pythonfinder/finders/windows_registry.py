@@ -23,7 +23,114 @@ def get_registry_python_paths() -> list[str]:
     Returns:
         A list of paths to Python installations.
     """
-    pass
+    if os.name != "nt" or winreg is None:
+        return []
+
+    paths = []
+
+    # PEP 514 registry keys
+    python_core_key = r"Software\Python\PythonCore"
+    python_key = r"Software\Python"
+
+    # Registry views to search
+    registry_views = []
+    if hasattr(winreg, "KEY_WOW64_64KEY"):
+        registry_views.append(winreg.KEY_WOW64_64KEY)
+    if hasattr(winreg, "KEY_WOW64_32KEY"):
+        registry_views.append(winreg.KEY_WOW64_32KEY)
+
+    # Registry roots to search
+    registry_roots = [winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE]
+
+    for root in registry_roots:
+        for view in registry_views:
+            # Try PythonCore first (standard Python installations)
+            try:
+                with winreg.OpenKey(
+                    root, python_core_key, 0, winreg.KEY_READ | view
+                ) as core_key:
+                    for i in range(winreg.QueryInfoKey(core_key)[0]):
+                        version = winreg.EnumKey(core_key, i)
+                        try:
+                            with winreg.OpenKey(
+                                core_key,
+                                f"{version}\\InstallPath",
+                                0,
+                                winreg.KEY_READ | view,
+                            ) as install_key:
+                                install_path, _ = winreg.QueryValueEx(install_key, "")
+                                if install_path and os.path.exists(install_path):
+                                    paths.append(install_path)
+
+                                # Also check for ExecutablePath
+                                try:
+                                    exe_path, _ = winreg.QueryValueEx(
+                                        install_key, "ExecutablePath"
+                                    )
+                                    if exe_path and os.path.exists(exe_path):
+                                        exe_dir = os.path.dirname(exe_path)
+                                        if exe_dir not in paths:
+                                            paths.append(exe_dir)
+                                except (FileNotFoundError, OSError):
+                                    pass
+                        except (FileNotFoundError, OSError):
+                            continue
+            except (FileNotFoundError, OSError):
+                pass
+
+            # Then try the more general Python key (for other distributions)
+            try:
+                with winreg.OpenKey(
+                    root, python_key, 0, winreg.KEY_READ | view
+                ) as python_root_key:
+                    for i in range(winreg.QueryInfoKey(python_root_key)[0]):
+                        company = winreg.EnumKey(python_root_key, i)
+                        if company == "PythonCore":
+                            continue  # Already handled above
+
+                        try:
+                            company_key = f"{python_key}\\{company}"
+                            with winreg.OpenKey(
+                                root, company_key, 0, winreg.KEY_READ | view
+                            ) as company_key_handle:
+                                for j in range(
+                                    winreg.QueryInfoKey(company_key_handle)[0]
+                                ):
+                                    version = winreg.EnumKey(company_key_handle, j)
+                                    try:
+                                        version_key = (
+                                            f"{company_key}\\{version}\\InstallPath"
+                                        )
+                                        with winreg.OpenKey(
+                                            root, version_key, 0, winreg.KEY_READ | view
+                                        ) as install_key:
+                                            install_path, _ = winreg.QueryValueEx(
+                                                install_key, ""
+                                            )
+                                            if install_path and os.path.exists(
+                                                install_path
+                                            ):
+                                                paths.append(install_path)
+
+                                            # Also check for ExecutablePath
+                                            try:
+                                                exe_path, _ = winreg.QueryValueEx(
+                                                    install_key, "ExecutablePath"
+                                                )
+                                                if exe_path and os.path.exists(exe_path):
+                                                    exe_dir = os.path.dirname(exe_path)
+                                                    if exe_dir not in paths:
+                                                        paths.append(exe_dir)
+                                            except (FileNotFoundError, OSError):
+                                                pass
+                                    except (FileNotFoundError, OSError):
+                                        continue
+                        except (FileNotFoundError, OSError):
+                            continue
+            except (FileNotFoundError, OSError):
+                pass
+
+    return paths
 
 
 class WindowsRegistryInfo:

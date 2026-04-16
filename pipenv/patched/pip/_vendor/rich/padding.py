@@ -54,7 +54,8 @@ class Padding(JupyterMixin):
         Returns:
             Padding: A Padding instance.
         """
-        pass
+
+        return Padding(renderable, pad=(0, 0, 0, level), expand=False)
 
     @staticmethod
     def unpack(pad: "PaddingDimensions") -> Tuple[int, int, int, int]:

@@ -253,7 +253,8 @@ class ScriptMaker(object):
     manifest = _DEFAULT_MANIFEST
 
     def get_manifest(self, exename):
-        pass
+        base = os.path.basename(exename)
+        return self.manifest % base
 
     def _write_script(self, names, shebang, script_bytes, filenames, ext):
         use_launcher = self.add_launchers and self._is_nt
@@ -390,11 +391,11 @@ class ScriptMaker(object):
 
     @property
     def dry_run(self):
-        pass
+        return self._fileop.dry_run
 
     @dry_run.setter
     def dry_run(self, value):
-        pass
+        self._fileop.dry_run = value
 
     if os.name == 'nt' or (os.name == 'java' and os._name == 'nt'):  # pragma: no cover
         # Executable launcher support.

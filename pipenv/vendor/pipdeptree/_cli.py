@@ -221,7 +221,12 @@ def _handle_legacy_render_options(options: Options) -> str:
 
 
 def _validate_output_format(value: str) -> str:
-    pass
+    if value in ALLOWED_RENDER_FORMATS:
+        return value
+    if value.startswith("graphviz-"):
+        return value
+    msg = f'"{value}" is not a known output format. Must be one of {", ".join(ALLOWED_RENDER_FORMATS)}, or graphviz-*'
+    raise ArgumentTypeError(msg)
 
 
 __all__ = [

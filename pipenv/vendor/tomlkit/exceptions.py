@@ -29,7 +29,7 @@ class ParseError(ValueError, TOMLKitError):
 
     @property
     def col(self):
-        pass
+        return self._col
 
 
 class MixedArrayTypesError(ParseError):

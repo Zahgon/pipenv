@@ -68,7 +68,7 @@ class ParsedRequirement(NamedTuple):
 # Recursive descent parser for dependency specifier
 # --------------------------------------------------------------------------------------
 def parse_requirement(source: str) -> ParsedRequirement:
-    pass
+    return _parse_requirement(Tokenizer(source, rules=DEFAULT_RULES))
 
 
 def _parse_requirement(tokenizer: Tokenizer) -> ParsedRequirement:

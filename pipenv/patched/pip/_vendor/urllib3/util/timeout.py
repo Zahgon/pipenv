@@ -130,7 +130,40 @@ class Timeout(object):
         :raises ValueError: If it is a numeric value less than or equal to
             zero, or the type is not an integer, float, or None.
         """
-        pass
+        if value is _Default:
+            return cls.DEFAULT_TIMEOUT
+
+        if value is None or value is cls.DEFAULT_TIMEOUT:
+            return value
+
+        if isinstance(value, bool):
+            raise ValueError(
+                "Timeout cannot be a boolean value. It must "
+                "be an int, float or None."
+            )
+        try:
+            float(value)
+        except (TypeError, ValueError):
+            raise ValueError(
+                "Timeout value %s was %s, but it must be an "
+                "int, float or None." % (name, value)
+            )
+
+        try:
+            if value <= 0:
+                raise ValueError(
+                    "Attempted to set %s timeout to %s, but the "
+                    "timeout cannot be set to a value less "
+                    "than or equal to 0." % (name, value)
+                )
+        except TypeError:
+            # Python 3
+            raise ValueError(
+                "Timeout value %s was %s, but it must be an "
+                "int, float or None." % (name, value)
+            )
+
+        return value
 
     @classmethod
     def from_float(cls, timeout):
@@ -181,7 +214,11 @@ class Timeout(object):
         :raises urllib3.exceptions.TimeoutStateError: if you attempt
             to get duration for a timer that hasn't been started.
         """
-        pass
+        if self._start_connect is None:
+            raise TimeoutStateError(
+                "Can't get connect duration for timer that has not started."
+            )
+        return current_time() - self._start_connect
 
     @property
     def connect_timeout(self):
@@ -193,7 +230,13 @@ class Timeout(object):
         :return: Connect timeout.
         :rtype: int, float, :attr:`Timeout.DEFAULT_TIMEOUT` or None
         """
-        pass
+        if self.total is None:
+            return self._connect
+
+        if self._connect is None or self._connect is self.DEFAULT_TIMEOUT:
+            return self.total
+
+        return min(self._connect, self.total)
 
     @property
     def read_timeout(self):
@@ -212,4 +255,17 @@ class Timeout(object):
         :raises urllib3.exceptions.TimeoutStateError: If :meth:`start_connect`
             has not yet been called on this object.
         """
-        pass
+        if (
+            self.total is not None
+            and self.total is not self.DEFAULT_TIMEOUT
+            and self._read is not None
+            and self._read is not self.DEFAULT_TIMEOUT
+        ):
+            # In case the connect timeout has not yet been established.
+            if self._start_connect is None:
+                return self._read
+            return max(0, min(self.total - self.get_connect_duration(), self._read))
+        elif self.total is not None and self.total is not self.DEFAULT_TIMEOUT:
+            return max(0, self.total - self.get_connect_duration())
+        else:
+            return self._read

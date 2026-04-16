@@ -48,7 +48,11 @@ class Hash(DataModel):
 
     @classmethod
     def from_line(cls, value):
-        pass
+        try:
+            name, value = value.split(":", 1)
+        except ValueError:
+            name = "sha256"
+        return cls(data={"name":name, "value": value})
 
     def __eq__(self, other):
         if not isinstance(other, Hash):
@@ -62,4 +66,4 @@ class Hash(DataModel):
         return self.digest
 
     def as_line(self):
-        pass
+        return "{0[0]}:{0[1]}".format(next(iter(self._data.items())))

@@ -236,7 +236,10 @@ kernel32 = WinDLL("kernel32.dll")
 
 
 def _handle_win_error(result: bool, _: Any, args: Any) -> Any:
-    pass
+    if not result:
+        # Note, actually raises OSError after calling GetLastError and FormatMessage
+        raise WinError()
+    return args
 
 
 CertCreateCertificateChainEngine = wincrypt.CertCreateCertificateChainEngine

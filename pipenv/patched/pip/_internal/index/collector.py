@@ -48,7 +48,10 @@ def _match_vcs_scheme(url: str) -> str | None:
 
     Returns the matched VCS scheme, or None if there's no match.
     """
-    pass
+    for scheme in vcs.schemes:
+        if url.lower().startswith(scheme) and url[len(scheme)] in "+:":
+            return scheme
+    return None
 
 
 class _NotAPIContent(Exception):
@@ -65,7 +68,19 @@ def _ensure_api_header(response: Response) -> None:
 
     Raises `_NotAPIContent` if the content type is not a valid content-type.
     """
-    pass
+    content_type = response.headers.get("Content-Type", "Unknown")
+
+    content_type_l = content_type.lower()
+    if content_type_l.startswith(
+        (
+            "text/html",
+            "application/vnd.pypi.simple.v1+html",
+            "application/vnd.pypi.simple.v1+json",
+        )
+    ):
+        return
+
+    raise _NotAPIContent(content_type, response.request.method)
 
 
 class _NotHTTP(Exception):
@@ -80,7 +95,14 @@ def _ensure_api_response(url: str, session: PipSession) -> None:
     Raises `_NotHTTP` if the URL is not available for a HEAD request, or
     `_NotAPIContent` if the content type is not a valid content type.
     """
-    pass
+    scheme, netloc, path, query, fragment = urllib.parse.urlsplit(url)
+    if scheme not in {"http", "https"}:
+        raise _NotHTTP()
+
+    resp = session.head(url, allow_redirects=True)
+    raise_for_status(resp)
+
+    _ensure_api_header(resp)
 
 
 def _get_simple_response(url: str, session: PipSession) -> Response:
@@ -96,12 +118,65 @@ def _get_simple_response(url: str, session: PipSession) -> Response:
     3. Check the Content-Type header to make sure we got a Simple API response,
        and raise `_NotAPIContent` otherwise.
     """
-    pass
+    if is_archive_file(Link(url).filename):
+        _ensure_api_response(url, session=session)
+
+    logger.debug("Getting page %s", redact_auth_from_url(url))
+
+    resp = session.get(
+        url,
+        headers={
+            "Accept": ", ".join(
+                [
+                    "application/vnd.pypi.simple.v1+json",
+                    "application/vnd.pypi.simple.v1+html; q=0.1",
+                    "text/html; q=0.01",
+                ]
+            ),
+            # We don't want to blindly returned cached data for
+            # /simple/, because authors generally expecting that
+            # twine upload && pip install will function, but if
+            # they've done a pip install in the last ~10 minutes
+            # it won't. Thus by setting this to zero we will not
+            # blindly use any cached data, however the benefit of
+            # using max-age=0 instead of no-cache, is that we will
+            # still support conditional requests, so we will still
+            # minimize traffic sent in cases where the page hasn't
+            # changed at all, we will just always incur the round
+            # trip for the conditional GET now instead of only
+            # once per 10 minutes.
+            # For more information, please see pypa/pip#5670.
+            "Cache-Control": "max-age=0",
+        },
+    )
+    raise_for_status(resp)
+
+    # The check for archives above only works if the url ends with
+    # something that looks like an archive. However that is not a
+    # requirement of an url. Unless we issue a HEAD request on every
+    # url we cannot know ahead of time for sure if something is a
+    # Simple API response or not. However we can check after we've
+    # downloaded it.
+    _ensure_api_header(resp)
+
+    logger.debug(
+        "Fetched page %s as %s",
+        redact_auth_from_url(url),
+        resp.headers.get("Content-Type", "Unknown"),
+    )
+
+    return resp
 
 
 def _get_encoding_from_headers(headers: ResponseHeaders) -> str | None:
     """Determine if we have any encoding information in our headers."""
-    pass
+    if headers and "Content-Type" in headers:
+        m = email.message.Message()
+        m["content-type"] = headers["Content-Type"]
+        charset = m.get_param("charset")
+        if charset:
+            return str(charset)
+    return None
 
 
 class CacheablePageContent:
@@ -126,7 +201,18 @@ def with_cached_index_content(fn: ParseLinks) -> ParseLinks:
     function's result (keyed by CacheablePageContent), unless the IndexContent
     `page` has `page.cache_link_parsing == False`.
     """
-    pass
+
+    @functools.cache
+    def wrapper(cacheable_page: CacheablePageContent) -> list[Link]:
+        return list(fn(cacheable_page.page))
+
+    @functools.wraps(fn)
+    def wrapper_wrapper(page: IndexContent) -> list[Link]:
+        if page.cache_link_parsing:
+            return wrapper(CacheablePageContent(page))
+        return list(fn(page))
+
+    return wrapper_wrapper
 
 
 @with_cached_index_content
@@ -193,10 +279,18 @@ class HTMLLinkParser(HTMLParser):
         self.anchors: list[dict[str, str | None]] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        pass
+        if tag == "base" and self.base_url is None:
+            href = self.get_href(attrs)
+            if href is not None:
+                self.base_url = href
+        elif tag == "a":
+            self.anchors.append(dict(attrs))
 
     def get_href(self, attrs: list[tuple[str, str | None]]) -> str | None:
-        pass
+        for name, value in attrs:
+            if name == "href":
+                return value
+        return None
 
 
 def _handle_get_simple_fail(
@@ -204,17 +298,82 @@ def _handle_get_simple_fail(
     reason: str | Exception,
     meth: Callable[..., None] | None = None,
 ) -> None:
-    pass
+    if meth is None:
+        meth = logger.debug
+    meth("Could not fetch URL %s: %s - skipping", link, reason)
 
 
 def _make_index_content(
     response: Response, cache_link_parsing: bool = True
 ) -> IndexContent:
-    pass
+    encoding = _get_encoding_from_headers(response.headers)
+    return IndexContent(
+        response.content,
+        response.headers["Content-Type"],
+        encoding=encoding,
+        url=response.url,
+        cache_link_parsing=cache_link_parsing,
+    )
 
 
 def _get_index_content(link: Link, *, session: PipSession) -> IndexContent | None:
-    pass
+    url = link.url.split("#", 1)[0]
+
+    # Check for VCS schemes that do not support lookup as web pages.
+    vcs_scheme = _match_vcs_scheme(url)
+    if vcs_scheme:
+        logger.warning(
+            "Cannot look at %s URL %s because it does not support lookup as web pages.",
+            vcs_scheme,
+            link,
+        )
+        return None
+
+    # Tack index.html onto file:// URLs that point to directories
+    if url.startswith("file:") and os.path.isdir(url_to_path(url)):
+        # add trailing slash if not present so urljoin doesn't trim
+        # final segment
+        if not url.endswith("/"):
+            url += "/"
+        # TODO: In the future, it would be nice if pip supported PEP 691
+        #       style responses in the file:// URLs, however there's no
+        #       standard file extension for application/vnd.pypi.simple.v1+json
+        #       so we'll need to come up with something on our own.
+        url = urllib.parse.urljoin(url, "index.html")
+        logger.debug(" file: URL is directory, getting %s", url)
+
+    try:
+        resp = _get_simple_response(url, session=session)
+    except _NotHTTP:
+        logger.warning(
+            "Skipping page %s because it looks like an archive, and cannot "
+            "be checked by a HTTP HEAD request.",
+            link,
+        )
+    except _NotAPIContent as exc:
+        logger.warning(
+            "Skipping page %s because the %s request got Content-Type: %s. "
+            "The only supported Content-Types are application/vnd.pypi.simple.v1+json, "
+            "application/vnd.pypi.simple.v1+html, and text/html",
+            link,
+            exc.request_desc,
+            exc.content_type,
+        )
+    except NetworkConnectionError as exc:
+        _handle_get_simple_fail(link, exc)
+    except RetryError as exc:
+        _handle_get_simple_fail(link, exc)
+    except SSLError as exc:
+        reason = "There was a problem confirming the ssl certificate: "
+        reason += str(exc)
+        _handle_get_simple_fail(link, reason, meth=logger.info)
+    except requests.ConnectionError as exc:
+        _handle_get_simple_fail(link, f"connection error: {exc}")
+    except requests.Timeout:
+        _handle_get_simple_fail(link, "timed out")
+    else:
+        return _make_index_content(resp, cache_link_parsing=link.cache_link_parsing)
+    return None
 
 
 class CollectedSources(NamedTuple):
@@ -279,13 +438,13 @@ class LinkCollector:
 
     @property
     def find_links(self) -> list[str]:
-        pass
+        return self.search_scope.find_links
 
     def fetch_response(self, location: Link) -> IndexContent | None:
         """
         Fetch an HTML page containing package links.
         """
-        pass
+        return _get_index_content(location, session=self.session)
 
     def collect_sources(
         self,

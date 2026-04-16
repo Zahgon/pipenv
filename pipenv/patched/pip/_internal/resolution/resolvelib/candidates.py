@@ -61,19 +61,68 @@ def as_base_candidate(candidate: Candidate) -> BaseCandidate | None:
 def make_install_req_from_link(
     link: Link, template: InstallRequirement
 ) -> InstallRequirement:
-    pass
+    assert not template.editable, "template is editable"
+    if template.req:
+        line = str(template.req)
+    else:
+        line = link.url
+    ireq = install_req_from_line(
+        line,
+        user_supplied=template.user_supplied,
+        comes_from=template.comes_from,
+        isolated=template.isolated,
+        constraint=template.constraint,
+        hash_options=template.hash_options,
+        config_settings=template.config_settings,
+    )
+    ireq.original_link = template.original_link
+    ireq.link = link
+    ireq.extras = template.extras
+    return ireq
 
 
 def make_install_req_from_editable(
     link: Link, template: InstallRequirement
 ) -> InstallRequirement:
-    pass
+    assert template.editable, "template not editable"
+    if template.name:
+        req_string = f"{template.name} @ {link.url}"
+    else:
+        req_string = link.url
+    ireq = install_req_from_editable(
+        req_string,
+        user_supplied=template.user_supplied,
+        comes_from=template.comes_from,
+        isolated=template.isolated,
+        constraint=template.constraint,
+        permit_editable_wheels=template.permit_editable_wheels,
+        hash_options=template.hash_options,
+        config_settings=template.config_settings,
+    )
+    ireq.extras = template.extras
+    return ireq
 
 
 def _make_install_req_from_dist(
     dist: BaseDistribution, template: InstallRequirement
 ) -> InstallRequirement:
-    pass
+    if template.req:
+        line = str(template.req)
+    elif template.link:
+        line = f"{dist.canonical_name} @ {template.link.url}"
+    else:
+        line = f"{dist.canonical_name}=={dist.version}"
+    ireq = install_req_from_line(
+        line,
+        user_supplied=template.user_supplied,
+        comes_from=template.comes_from,
+        isolated=template.isolated,
+        constraint=template.constraint,
+        hash_options=template.hash_options,
+        config_settings=template.config_settings,
+    )
+    ireq.satisfied_by = dist
+    return ireq
 
 
 class _InstallRequirementBackedCandidate(Candidate):
@@ -133,12 +182,14 @@ class _InstallRequirementBackedCandidate(Candidate):
 
     @property
     def source_link(self) -> Link | None:
-        pass
+        return self._source_link
 
     @property
     def project_name(self) -> NormalizedName:
         """The normalised name of the project the candidate refers to"""
-        pass
+        if self._name is None:
+            self._name = self.dist.canonical_name
+        return self._name
 
     @property
     def name(self) -> str:
@@ -161,10 +212,54 @@ class _InstallRequirementBackedCandidate(Candidate):
 
     def _check_metadata_consistency(self, dist: BaseDistribution) -> None:
         """Check for consistency of project name and version of dist."""
-        pass
+        if self._name is not None and self._name != dist.canonical_name:
+            raise MetadataInconsistent(
+                self._ireq,
+                "name",
+                self._name,
+                dist.canonical_name,
+            )
+        if self._version is not None and self._version != dist.version:
+            raise MetadataInconsistent(
+                self._ireq,
+                "version",
+                str(self._version),
+                str(dist.version),
+            )
+        # check dependencies are valid
+        # TODO performance: this means we iterate the dependencies at least twice,
+        # we may want to cache parsed Requires-Dist
+        try:
+            list(dist.iter_dependencies(list(dist.iter_provided_extras())))
+        except InvalidRequirement as e:
+            raise MetadataInvalid(self._ireq, str(e))
 
     def _prepare(self) -> BaseDistribution:
-        pass
+        try:
+            dist = self._prepare_distribution()
+        except HashError as e:
+            # Provide HashError the underlying ireq that caused it. This
+            # provides context for the resulting error message to show the
+            # offending line to the user.
+            e.req = self._ireq
+            raise
+        except InstallationSubprocessError as exc:
+            if isinstance(self._ireq.comes_from, InstallRequirement):
+                request_chain = self._ireq.comes_from.from_path()
+            else:
+                request_chain = self._ireq.comes_from
+
+            if request_chain is None:
+                request_chain = "directly requested"
+
+            raise FailedToPrepareCandidate(
+                package_name=self._ireq.name or str(self._link),
+                requirement_chain=request_chain,
+                failed_step=exc.command_description,
+            )
+
+        self._check_metadata_consistency(dist)
+        return dist
 
     def iter_dependencies(self, with_requires: bool) -> Iterable[Requirement | None]:
         # Emit the Requires-Python requirement first to fail fast on
@@ -234,7 +329,8 @@ class LinkCandidate(_InstallRequirementBackedCandidate):
         )
 
     def _prepare_distribution(self) -> BaseDistribution:
-        pass
+        preparer = self._factory.preparer
+        return preparer.prepare_linked_requirement(self._ireq, parallel_builds=True)
 
 
 class EditableCandidate(_InstallRequirementBackedCandidate):
@@ -258,7 +354,7 @@ class EditableCandidate(_InstallRequirementBackedCandidate):
         )
 
     def _prepare_distribution(self) -> BaseDistribution:
-        pass
+        return self._factory.preparer.prepare_editable_requirement(self._ireq)
 
 
 class AlreadyInstalledCandidate(Candidate):
@@ -299,7 +395,7 @@ class AlreadyInstalledCandidate(Candidate):
 
     @property
     def project_name(self) -> NormalizedName:
-        pass
+        return self.dist.canonical_name
 
     @property
     def name(self) -> str:
@@ -393,7 +489,7 @@ class ExtrasCandidate(Candidate):
 
     @property
     def project_name(self) -> NormalizedName:
-        pass
+        return self.base.project_name
 
     @property
     def name(self) -> str:
@@ -411,7 +507,7 @@ class ExtrasCandidate(Candidate):
 
     @property
     def is_installed(self) -> bool:
-        pass
+        return self.base.is_installed
 
     @property
     def is_editable(self) -> bool:
@@ -419,7 +515,7 @@ class ExtrasCandidate(Candidate):
 
     @property
     def source_link(self) -> Link | None:
-        pass
+        return self.base.source_link
 
     def iter_dependencies(self, with_requires: bool) -> Iterable[Requirement | None]:
         factory = self.base._factory
@@ -479,7 +575,7 @@ class RequiresPythonCandidate(Candidate):
 
     @property
     def project_name(self) -> NormalizedName:
-        pass
+        return REQUIRES_PYTHON_IDENTIFIER
 
     @property
     def name(self) -> str:

@@ -112,7 +112,7 @@ class PipProvider(_ProviderBase):
         Exposes the provider's constraints mapping without encouraging
         external callers to reach into private attributes.
         """
-        pass
+        return self._constraints
 
     def identify(self, requirement_or_candidate: Requirement | Candidate) -> str:
         return requirement_or_candidate.name
@@ -207,7 +207,54 @@ class PipProvider(_ProviderBase):
           operator, such as ``>=`` or ``!=``.
         * Alphabetical order for consistency (aids debuggability).
         """
-        pass
+        try:
+            next(iter(information[identifier]))
+        except StopIteration:
+            # There is no information for this identifier, so there's no known
+            # candidates.
+            has_information = False
+        else:
+            has_information = True
+
+        if not has_information:
+            direct = False
+            ireqs: tuple[InstallRequirement | None, ...] = ()
+        else:
+            # Go through the information and for each requirement,
+            # check if it's explicit (e.g., a direct link) and get the
+            # InstallRequirement (the second element) from get_candidate_lookup()
+            directs, ireqs = zip(
+                *(
+                    (isinstance(r, ExplicitRequirement), r.get_candidate_lookup()[1])
+                    for r, _ in information[identifier]
+                )
+            )
+            direct = any(directs)
+
+        operators: list[tuple[str, str]] = [
+            (specifier.operator, specifier.version)
+            for specifier_set in (ireq.specifier for ireq in ireqs if ireq)
+            for specifier in specifier_set
+        ]
+
+        pinned = any(((op[:2] == "==") and ("*" not in ver)) for op, ver in operators)
+        upper_bounded = any(
+            ((op in ("<", "<=", "~=")) or (op == "==" and "*" in ver))
+            for op, ver in operators
+        )
+        unfree = bool(operators)
+        requested_order = self._user_requested.get(identifier, math.inf)
+        conflict_promoted = identifier in self._conflict_promoted
+
+        return (
+            not conflict_promoted,
+            not direct,
+            not pinned,
+            not upper_bounded,
+            requested_order,
+            not unfree,
+            identifier,
+        )
 
     def find_matches(
         self,

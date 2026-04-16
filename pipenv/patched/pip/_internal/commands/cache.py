@@ -38,7 +38,16 @@ class CacheCommand(Command):
     """
 
     def add_options(self) -> None:
-        pass
+        self.cmd_opts.add_option(
+            "--format",
+            action="store",
+            dest="list_format",
+            default="human",
+            choices=("human", "abspath"),
+            help="Select the output format among: human (default) or abspath",
+        )
+
+        self.parser.insert_option_group(0, self.cmd_opts)
 
     def handler_map(self) -> dict[str, Callable[[Values, list[str]], None]]:
         return {
@@ -76,7 +85,10 @@ class CacheCommand(Command):
         return SUCCESS
 
     def get_cache_dir(self, options: Values, args: list[str]) -> None:
-        pass
+        if args:
+            raise CommandError("Too many arguments")
+
+        logger.info(options.cache_dir)
 
     def get_cache_info(self, options: Values, args: list[str]) -> None:
         if args:
@@ -121,19 +133,93 @@ class CacheCommand(Command):
         logger.info(message)
 
     def list_cache_items(self, options: Values, args: list[str]) -> None:
-        pass
+        if len(args) > 1:
+            raise CommandError("Too many arguments")
+
+        if args:
+            pattern = args[0]
+        else:
+            pattern = "*"
+
+        files = self._find_wheels(options, pattern)
+        if options.list_format == "human":
+            self.format_for_human(files)
+        else:
+            self.format_for_abspath(files)
 
     def format_for_human(self, files: list[str]) -> None:
-        pass
+        if not files:
+            logger.info("No locally built wheels cached.")
+            return
+
+        results = []
+        for filename in files:
+            wheel = os.path.basename(filename)
+            size = filesystem.format_file_size(filename)
+            results.append(f" - {wheel} ({size})")
+        logger.info("Cache contents:\n")
+        logger.info("\n".join(sorted(results)))
 
     def format_for_abspath(self, files: list[str]) -> None:
-        pass
+        if files:
+            logger.info("\n".join(sorted(files)))
 
     def remove_cache_items(self, options: Values, args: list[str]) -> None:
-        pass
+        if len(args) > 1:
+            raise CommandError("Too many arguments")
+
+        if not args:
+            raise CommandError("Please provide a pattern")
+
+        files = self._find_wheels(options, args[0])
+
+        no_matching_msg = "No matching packages"
+        if args[0] == "*":
+            # Only fetch http files if no specific pattern given
+            files += self._find_http_files(options)
+        else:
+            # Add the pattern to the log message
+            no_matching_msg += f' for pattern "{args[0]}"'
+
+        if not files:
+            logger.warning(no_matching_msg)
+
+        bytes_removed = 0
+        for filename in files:
+            bytes_removed += os.stat(filename).st_size
+            os.unlink(filename)
+            logger.verbose("Removed %s", filename)
+
+        http_dirs = filesystem.subdirs_without_files(self._cache_dir(options, "http"))
+        wheel_dirs = filesystem.subdirs_without_wheels(
+            self._cache_dir(options, "wheels")
+        )
+        dirs = [*http_dirs, *wheel_dirs]
+
+        for subdir in dirs:
+            try:
+                for file in subdir.iterdir():
+                    file.unlink(missing_ok=True)
+                subdir.rmdir()
+            except FileNotFoundError:
+                # If the directory is already gone, that's fine.
+                pass
+            logger.verbose("Removed %s", subdir)
+
+        # selfcheck.json is no longer used by pip.
+        selfcheck_json = self._cache_dir(options, "selfcheck.json")
+        if os.path.isfile(selfcheck_json):
+            os.remove(selfcheck_json)
+            logger.verbose("Removed legacy selfcheck.json file")
+
+        logger.info("Files removed: %s (%s)", len(files), format_size(bytes_removed))
+        logger.info("Directories removed: %s", len(dirs))
 
     def purge_cache(self, options: Values, args: list[str]) -> None:
-        pass
+        if args:
+            raise CommandError("Too many arguments")
+
+        return self.remove_cache_items(options, ["*"])
 
     def _cache_dir(self, options: Values, subdir: str) -> str:
         return os.path.join(options.cache_dir, subdir)

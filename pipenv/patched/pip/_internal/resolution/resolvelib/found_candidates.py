@@ -31,7 +31,29 @@ def _iter_built(infos: Iterator[IndexCandidateInfo]) -> Iterator[Candidate]:
     This iterator is used when the package is not already installed. Candidates
     from index come later in their normal ordering.
     """
-    pass
+    versions_found: set[_BaseVersion] = set()
+    for version, func in infos:
+        if version in versions_found:
+            continue
+        try:
+            candidate = func()
+        except MetadataInvalid as e:
+            logger.warning(
+                "Ignoring version %s of %s since it has invalid metadata:\n"
+                "%s\n"
+                "Please use pip<24.1 if you need to use this version.",
+                version,
+                e.ireq.name,
+                e,
+            )
+            # Mark version as found to avoid trying other candidates with the same
+            # version, since they most likely have invalid metadata as well.
+            versions_found.add(version)
+        else:
+            if candidate is None:
+                continue
+            yield candidate
+            versions_found.add(version)
 
 
 def _iter_built_with_prepended(
@@ -44,7 +66,16 @@ def _iter_built_with_prepended(
     always yielded first, and candidates from index come later in their
     normal ordering, except skipped when the version is already installed.
     """
-    pass
+    yield installed
+    versions_found: set[_BaseVersion] = {installed.version}
+    for version, func in infos:
+        if version in versions_found:
+            continue
+        candidate = func()
+        if candidate is None:
+            continue
+        yield candidate
+        versions_found.add(version)
 
 
 def _iter_built_with_inserted(
@@ -60,7 +91,23 @@ def _iter_built_with_inserted(
     the installed candidate exactly once before we start yielding older or
     equivalent candidates, or after all other candidates if they are all newer.
     """
-    pass
+    versions_found: set[_BaseVersion] = set()
+    for version, func in infos:
+        if version in versions_found:
+            continue
+        # If the installed candidate is better, yield it first.
+        if installed.version >= version:
+            yield installed
+            versions_found.add(installed.version)
+        candidate = func()
+        if candidate is None:
+            continue
+        yield candidate
+        versions_found.add(version)
+
+    # If the installed candidate is older than all other candidates.
+    if installed.version not in versions_found:
+        yield installed
 
 
 class FoundCandidates(Sequence[Candidate]):

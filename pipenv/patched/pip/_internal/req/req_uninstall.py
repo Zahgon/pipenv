@@ -21,7 +21,9 @@ from pipenv.patched.pip._internal.utils.virtualenv import running_under_virtuale
 logger = getLogger(__name__)
 
 
-def _script_names(bin_dir: str, script_name: str, is_gui: bool) -> Generator[str, None, None]:
+def _script_names(
+    bin_dir: str, script_name: str, is_gui: bool
+) -> Generator[str, None, None]:
     """Create the fully qualified name of the files created by
     {console,gui}_scripts for the given ``dist``.
     Returns the list of file names
@@ -42,10 +44,14 @@ def _unique(
     fn: Callable[..., Generator[Any, None, None]],
 ) -> Callable[..., Generator[Any, None, None]]:
     @functools.wraps(fn)
-    def wrapper(*args, **kwargs):
-        pass
+    def unique(*args: Any, **kw: Any) -> Generator[Any, None, None]:
+        seen: set[Any] = set()
+        for item in fn(*args, **kw):
+            if item not in seen:
+                seen.add(item)
+                yield item
 
-    return wrapper
+    return unique
 
 
 @_unique
@@ -92,7 +98,9 @@ def compact(paths: Iterable[str]) -> set[str]:
     short_paths: set[str] = set()
     for path in sorted(paths, key=len):
         should_skip = any(
-            path.startswith(shortpath.rstrip("*")) and path[len(shortpath.rstrip("*").rstrip(sep))] == sep for shortpath in short_paths
+            path.startswith(shortpath.rstrip("*"))
+            and path[len(shortpath.rstrip("*").rstrip(sep))] == sep
+            for shortpath in short_paths
         )
         if not should_skip:
             short_paths.add(path)
@@ -170,7 +178,10 @@ def compress_for_output_listing(paths: Iterable[str]) -> tuple[set[str], set[str
                     continue
 
                 file_ = os.path.join(dirpath, fname)
-                if os.path.isfile(file_) and os.path.normcase(file_) not in _normcased_files:
+                if (
+                    os.path.isfile(file_)
+                    and os.path.normcase(file_) not in _normcased_files
+                ):
                     # We are skipping this file. Add it to the set.
                     will_skip.add(file_)
 
@@ -281,7 +292,7 @@ class StashedUninstallPathSet:
 
     @property
     def can_rollback(self) -> bool:
-        pass
+        return bool(self._moves)
 
 
 class UninstallPathSet:
@@ -433,7 +444,11 @@ class UninstallPathSet:
             )
             return cls(dist)
 
-        if normalized_dist_location in {p for p in {sysconfig.get_path("stdlib"), sysconfig.get_path("platstdlib")} if p}:
+        if normalized_dist_location in {
+            p
+            for p in {sysconfig.get_path("stdlib"), sysconfig.get_path("platstdlib")}
+            if p
+        }:
             logger.info(
                 "Not uninstalling %s at %s, as it is in the standard library.",
                 dist.canonical_name,
@@ -475,7 +490,11 @@ class UninstallPathSet:
                     namespaces = []
                 else:
                     namespaces = namespace_packages.splitlines(keepends=False)
-                for top_level_pkg in [p for p in dist.read_text("top_level.txt").splitlines() if p and p not in namespaces]:
+                for top_level_pkg in [
+                    p
+                    for p in dist.read_text("top_level.txt").splitlines()
+                    if p and p not in namespaces
+                ]:
                     path = os.path.join(dist_location, top_level_pkg)
                     paths_to_remove.add(path)
                     paths_to_remove.add(f"{path}.py")
@@ -509,13 +528,19 @@ class UninstallPathSet:
             # above, so this only covers the setuptools-style editable.
             with open(develop_egg_link) as fh:
                 link_pointer = os.path.normcase(fh.readline().strip())
-                normalized_link_pointer = paths_to_remove._normalize_path_cached(link_pointer)
-            assert os.path.samefile(normalized_link_pointer, normalized_dist_location), (
+                normalized_link_pointer = paths_to_remove._normalize_path_cached(
+                    link_pointer
+                )
+            assert os.path.samefile(
+                normalized_link_pointer, normalized_dist_location
+            ), (
                 f"Egg-link {develop_egg_link} (to {link_pointer}) does not match "
                 f"installed location of {dist.raw_name} (at {dist_location})"
             )
             paths_to_remove.add(develop_egg_link)
-            easy_install_pth = os.path.join(os.path.dirname(develop_egg_link), "easy-install.pth")
+            easy_install_pth = os.path.join(
+                os.path.dirname(develop_egg_link), "easy-install.pth"
+            )
             paths_to_remove.add_pth(easy_install_pth, dist_location)
 
         else:

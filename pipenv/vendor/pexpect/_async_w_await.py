@@ -68,7 +68,9 @@ class PatternWaiter(asyncio.Protocol):
         self.fut = asyncio.Future()
 
     def found(self, result):
-        pass
+        if not self.fut.done():
+            self.fut.set_result(result)
+            self.transport.pause_reading()
 
     def error(self, exc):
         if not self.fut.done():
@@ -76,15 +78,41 @@ class PatternWaiter(asyncio.Protocol):
             self.transport.pause_reading()
 
     def connection_made(self, transport):
-        pass
+        self.transport = transport
 
     def data_received(self, data):
-        pass
+        spawn = self.expecter.spawn
+        s = spawn._decoder.decode(data)
+        spawn._log(s, "read")
+
+        if self.fut.done():
+            spawn._before.write(s)
+            spawn._buffer.write(s)
+            return
+
+        try:
+            index = self.expecter.new_data(s)
+            if index is not None:
+                # Found a match
+                self.found(index)
+        except Exception as exc:
+            self.expecter.errored()
+            self.error(exc)
 
     def eof_received(self):
         # N.B. If this gets called, async will close the pipe (the spawn object)
         # for us
-        pass
+        try:
+            self.expecter.spawn.flag_eof = True
+            index = self.expecter.eof()
+        except EOF as exc:
+            self.error(exc)
+        else:
+            self.found(index)
 
     def connection_lost(self, exc):
-        pass
+        if isinstance(exc, OSError) and exc.errno == errno.EIO:
+            # We may get here without eof_received being called, e.g on Linux
+            self.eof_received()
+        elif exc is not None:
+            self.error(exc)

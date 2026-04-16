@@ -185,7 +185,13 @@ def site_cache_dir(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: cache directory tied to the user
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        opinion=opinion,
+        ensure_exists=ensure_exists,
+    ).site_cache_dir
 
 
 def user_state_dir(
@@ -203,7 +209,13 @@ def user_state_dir(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: state directory tied to the user
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        roaming=roaming,
+        ensure_exists=ensure_exists,
+    ).user_state_dir
 
 
 def user_log_dir(
@@ -221,37 +233,43 @@ def user_log_dir(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: log directory tied to the user
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        opinion=opinion,
+        ensure_exists=ensure_exists,
+    ).user_log_dir
 
 
 def user_documents_dir() -> str:
     """:returns: documents directory tied to the user"""
-    pass
+    return PlatformDirs().user_documents_dir
 
 
 def user_downloads_dir() -> str:
     """:returns: downloads directory tied to the user"""
-    pass
+    return PlatformDirs().user_downloads_dir
 
 
 def user_pictures_dir() -> str:
     """:returns: pictures directory tied to the user"""
-    pass
+    return PlatformDirs().user_pictures_dir
 
 
 def user_videos_dir() -> str:
     """:returns: videos directory tied to the user"""
-    pass
+    return PlatformDirs().user_videos_dir
 
 
 def user_music_dir() -> str:
     """:returns: music directory tied to the user"""
-    pass
+    return PlatformDirs().user_music_dir
 
 
 def user_desktop_dir() -> str:
     """:returns: desktop directory tied to the user"""
-    pass
+    return PlatformDirs().user_desktop_dir
 
 
 def user_runtime_dir(
@@ -269,7 +287,13 @@ def user_runtime_dir(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: runtime directory tied to the user
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        opinion=opinion,
+        ensure_exists=ensure_exists,
+    ).user_runtime_dir
 
 
 def site_runtime_dir(
@@ -287,7 +311,13 @@ def site_runtime_dir(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: runtime directory shared by users
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        opinion=opinion,
+        ensure_exists=ensure_exists,
+    ).site_runtime_dir
 
 
 def user_data_path(
@@ -305,7 +335,13 @@ def user_data_path(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: data path tied to the user
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        roaming=roaming,
+        ensure_exists=ensure_exists,
+    ).user_data_path
 
 
 def site_data_path(
@@ -323,7 +359,13 @@ def site_data_path(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: data path shared by users
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        multipath=multipath,
+        ensure_exists=ensure_exists,
+    ).site_data_path
 
 
 def user_config_path(
@@ -341,7 +383,13 @@ def user_config_path(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: config path tied to the user
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        roaming=roaming,
+        ensure_exists=ensure_exists,
+    ).user_config_path
 
 
 def site_config_path(
@@ -359,7 +407,13 @@ def site_config_path(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: config path shared by the users
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        multipath=multipath,
+        ensure_exists=ensure_exists,
+    ).site_config_path
 
 
 def site_cache_path(
@@ -377,7 +431,13 @@ def site_cache_path(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: cache directory tied to the user
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        opinion=opinion,
+        ensure_exists=ensure_exists,
+    ).site_cache_path
 
 
 def user_cache_path(
@@ -395,7 +455,13 @@ def user_cache_path(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: cache path tied to the user
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        opinion=opinion,
+        ensure_exists=ensure_exists,
+    ).user_cache_path
 
 
 def user_state_path(
@@ -413,7 +479,13 @@ def user_state_path(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: state path tied to the user
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        roaming=roaming,
+        ensure_exists=ensure_exists,
+    ).user_state_path
 
 
 def user_log_path(
@@ -431,37 +503,43 @@ def user_log_path(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: log path tied to the user
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        opinion=opinion,
+        ensure_exists=ensure_exists,
+    ).user_log_path
 
 
 def user_documents_path() -> Path:
     """:returns: documents a path tied to the user"""
-    pass
+    return PlatformDirs().user_documents_path
 
 
 def user_downloads_path() -> Path:
     """:returns: downloads path tied to the user"""
-    pass
+    return PlatformDirs().user_downloads_path
 
 
 def user_pictures_path() -> Path:
     """:returns: pictures path tied to the user"""
-    pass
+    return PlatformDirs().user_pictures_path
 
 
 def user_videos_path() -> Path:
     """:returns: videos path tied to the user"""
-    pass
+    return PlatformDirs().user_videos_path
 
 
 def user_music_path() -> Path:
     """:returns: music path tied to the user"""
-    pass
+    return PlatformDirs().user_music_path
 
 
 def user_desktop_path() -> Path:
     """:returns: desktop path tied to the user"""
-    pass
+    return PlatformDirs().user_desktop_path
 
 
 def user_runtime_path(
@@ -479,7 +557,13 @@ def user_runtime_path(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: runtime path tied to the user
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        opinion=opinion,
+        ensure_exists=ensure_exists,
+    ).user_runtime_path
 
 
 def site_runtime_path(
@@ -497,7 +581,13 @@ def site_runtime_path(
     :param ensure_exists: See `ensure_exists <platformdirs.api.PlatformDirsABC.ensure_exists>`.
     :returns: runtime path shared by users
     """
-    pass
+    return PlatformDirs(
+        appname=appname,
+        appauthor=appauthor,
+        version=version,
+        opinion=opinion,
+        ensure_exists=ensure_exists,
+    ).site_runtime_path
 
 
 __all__ = [

@@ -109,17 +109,24 @@ class Url(namedtuple("Url", url_attrs)):
     @property
     def hostname(self):
         """For backwards-compatibility with urlparse. We're nice like that."""
-        pass
+        return self.host
 
     @property
     def request_uri(self):
         """Absolute path including the query string."""
-        pass
+        uri = self.path or "/"
+
+        if self.query is not None:
+            uri += "?" + self.query
+
+        return uri
 
     @property
     def netloc(self):
         """Network location including host and port"""
-        pass
+        if self.port:
+            return "%s:%d" % (self.host, self.port)
+        return self.host
 
     @property
     def url(self):
@@ -140,7 +147,26 @@ class Url(namedtuple("Url", url_attrs)):
             ... '/path', 'query', 'fragment').url
             'http://username:password@host.com:80/path?query#fragment'
         """
-        pass
+        scheme, auth, host, port, path, query, fragment = self
+        url = u""
+
+        # We use "is not None" we want things to happen with empty strings (or 0 port)
+        if scheme is not None:
+            url += scheme + u"://"
+        if auth is not None:
+            url += auth + u"@"
+        if host is not None:
+            url += host
+        if port is not None:
+            url += u":" + str(port)
+        if path is not None:
+            url += path
+        if query is not None:
+            url += u"?" + query
+        if fragment is not None:
+            url += u"#" + fragment
+
+        return url
 
     def __str__(self):
         return self.url

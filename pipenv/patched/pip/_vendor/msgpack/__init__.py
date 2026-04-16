@@ -33,7 +33,7 @@ def packb(o, **kwargs):
 
     See :class:`Packer` for options.
     """
-    pass
+    return Packer(**kwargs).pack(o)
 
 
 def unpack(stream, **kwargs):

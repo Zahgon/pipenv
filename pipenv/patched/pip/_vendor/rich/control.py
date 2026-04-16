@@ -68,7 +68,7 @@ class Control:
     @classmethod
     def bell(cls) -> "Control":
         """Ring the 'bell'."""
-        pass
+        return cls(ControlType.BELL)
 
     @classmethod
     def home(cls) -> "Control":
@@ -115,7 +115,18 @@ class Control:
         Returns:
             ~Control: Control object.
         """
-        pass
+
+        return (
+            cls(
+                (ControlType.CURSOR_MOVE_TO_COLUMN, x),
+                (
+                    ControlType.CURSOR_DOWN if y > 0 else ControlType.CURSOR_UP,
+                    abs(y),
+                ),
+            )
+            if y
+            else cls((ControlType.CURSOR_MOVE_TO_COLUMN, x))
+        )
 
     @classmethod
     def move_to(cls, x: int, y: int) -> "Control":

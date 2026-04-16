@@ -159,7 +159,20 @@ class BaseDistribution(Protocol):
         This is the directory where pyproject.toml or setup.py is located.
         None if the distribution is not installed in editable mode.
         """
-        pass
+        # TODO: this property is relatively costly to compute, memoize it ?
+        direct_url = self.direct_url
+        if direct_url:
+            if direct_url.is_local_editable():
+                return url_to_path(direct_url.url)
+        else:
+            # Search for an .egg-link file by walking sys.path, as it was
+            # done before by dist_is_editable().
+            egg_link_path = egg_link_path_from_sys_path(self.raw_name)
+            if egg_link_path:
+                # TODO: get project location from second line of egg_link file
+                #       (https://github.com/pypa/pip/issues/10243)
+                return self.location
+        return None
 
     @property
     def installed_location(self) -> str | None:
@@ -198,7 +211,10 @@ class BaseDistribution(Protocol):
         uses one single file at ``info_location`` to store metadata. We need to
         treat this specially on uninstallation.
         """
-        pass
+        info_location = self.info_location
+        if not info_location:
+            return False
+        return pathlib.Path(info_location).is_file()
 
     @property
     def installed_as_egg(self) -> bool:
@@ -207,7 +223,12 @@ class BaseDistribution(Protocol):
         This usually indicates the distribution was installed by (older versions
         of) easy_install.
         """
-        pass
+        location = self.location
+        if not location:
+            return False
+        # XXX if the distribution is a zipped egg, location has a trailing /
+        # so we resort to pathlib.Path to check the suffix in a reliable way.
+        return pathlib.Path(location).suffix == ".egg"
 
     @property
     def installed_with_setuptools_egg_info(self) -> bool:
@@ -220,7 +241,12 @@ class BaseDistribution(Protocol):
         also installs an ``.egg-info``, but as a file, not a directory. This
         property is *False* for that case. Also see ``installed_by_distutils``.
         """
-        pass
+        info_location = self.info_location
+        if not info_location:
+            return False
+        if not info_location.endswith(".egg-info"):
+            return False
+        return pathlib.Path(info_location).is_dir()
 
     @property
     def installed_with_dist_info(self) -> bool:
@@ -231,7 +257,12 @@ class BaseDistribution(Protocol):
         setuptools (but through pip, not directly), or anything using the
         standardized build backend interface (PEP 517).
         """
-        pass
+        info_location = self.info_location
+        if not info_location:
+            return False
+        if not info_location.endswith(".dist-info"):
+            return False
+        return pathlib.Path(info_location).is_dir()
 
     @property
     def canonical_name(self) -> NormalizedName:
@@ -251,7 +282,7 @@ class BaseDistribution(Protocol):
 
         This is a copy of ``pkg_resources.to_filename()`` for compatibility.
         """
-        pass
+        return self.raw_name.replace("-", "_")
 
     @property
     def direct_url(self) -> DirectUrl | None:
@@ -260,7 +291,24 @@ class BaseDistribution(Protocol):
         Returns None if the distribution has no `direct_url.json` metadata,
         or if `direct_url.json` is invalid.
         """
-        pass
+        try:
+            content = self.read_text(DIRECT_URL_METADATA_NAME)
+        except FileNotFoundError:
+            return None
+        try:
+            return DirectUrl.from_json(content)
+        except (
+            UnicodeDecodeError,
+            json.JSONDecodeError,
+            DirectUrlValidationError,
+        ) as e:
+            logger.warning(
+                "Error parsing %s for %s: %s",
+                DIRECT_URL_METADATA_NAME,
+                self.canonical_name,
+                e,
+            )
+            return None
 
     @property
     def installer(self) -> str:
@@ -276,11 +324,11 @@ class BaseDistribution(Protocol):
 
     @property
     def requested(self) -> bool:
-        pass
+        return self.is_file("REQUESTED")
 
     @property
     def editable(self) -> bool:
-        pass
+        return bool(self.editable_project_location)
 
     @property
     def local(self) -> bool:
@@ -294,11 +342,15 @@ class BaseDistribution(Protocol):
 
     @property
     def in_usersite(self) -> bool:
-        pass
+        if self.installed_location is None or user_site is None:
+            return False
+        return self.installed_location.startswith(normalize_path(user_site))
 
     @property
     def in_site_packages(self) -> bool:
-        pass
+        if self.installed_location is None or site_packages is None:
+            return False
+        return self.installed_location.startswith(normalize_path(site_packages))
 
     def is_file(self, path: InfoPath) -> bool:
         """Check whether an entry in the info directory is a file."""
@@ -349,17 +401,19 @@ class BaseDistribution(Protocol):
         :raises NoneMetadataError: If the metadata file is available, but does
             not contain valid metadata.
         """
-        pass
+        return msg_to_json(self.metadata)
 
     @property
     def metadata_version(self) -> str | None:
         """Value of "Metadata-Version:" in distribution metadata, if available."""
-        pass
+        return self.metadata.get("Metadata-Version")
 
     @property
     def raw_name(self) -> str:
         """Value of "Name:" in distribution metadata."""
-        pass
+        # The metadata should NEVER be missing the Name: key, but if it somehow
+        # does, fall back to the known canonical name.
+        return self.metadata.get("Name", self.canonical_name)
 
     @property
     def requires_python(self) -> SpecifierSet:
@@ -368,7 +422,17 @@ class BaseDistribution(Protocol):
         If the key does not exist or contains an invalid value, an empty
         SpecifierSet should be returned.
         """
-        pass
+        value = self.metadata.get("Requires-Python")
+        if value is None:
+            return SpecifierSet()
+        try:
+            # Convert to str to satisfy the type checker; this can be a Header object.
+            spec = SpecifierSet(str(value))
+        except InvalidSpecifier as e:
+            message = "Package %r has an invalid Requires-Python: %s"
+            logger.warning(message, self.raw_name, e)
+            return SpecifierSet()
+        return spec
 
     def iter_dependencies(self, extras: Collection[str] = ()) -> Iterable[Requirement]:
         """Dependencies of this distribution.

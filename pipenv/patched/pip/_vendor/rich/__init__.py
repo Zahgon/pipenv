@@ -68,7 +68,10 @@ def print(
         flush (bool, optional): Has no effect as Rich always flushes output. Defaults to False.
 
     """
-    pass
+    from .console import Console
+
+    write_console = get_console() if file is None else Console(file=file)
+    return write_console.print(*objects, sep=sep, end=end)
 
 
 def print_json(

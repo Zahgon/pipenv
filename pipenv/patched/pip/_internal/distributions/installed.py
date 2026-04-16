@@ -18,7 +18,7 @@ class InstalledDistribution(AbstractDistribution):
 
     @property
     def build_tracker_id(self) -> str | None:
-        pass
+        return None
 
     def get_metadata_distribution(self) -> BaseDistribution:
         assert self.req.satisfied_by is not None, "not actually installed"

@@ -68,7 +68,7 @@ class InMemoryMetadata:
         return pkg_resources.yield_lines(self.get_metadata(name))
 
     def metadata_isdir(self, name: str) -> bool:
-        pass
+        return False
 
     def metadata_listdir(self, name: str) -> list[str]:
         return []
@@ -86,7 +86,12 @@ class Distribution(BaseDistribution):
 
     @property
     def _extra_mapping(self) -> Mapping[NormalizedName, str]:
-        pass
+        if self.__extra_mapping is None:
+            self.__extra_mapping = {
+                canonicalize_name(extra): extra for extra in self._dist.extras
+            }
+
+        return self.__extra_mapping
 
     @classmethod
     def from_directory(cls, directory: str) -> BaseDistribution:
@@ -148,26 +153,36 @@ class Distribution(BaseDistribution):
 
     @property
     def location(self) -> str | None:
-        pass
+        return self._dist.location
 
     @property
     def installed_location(self) -> str | None:
-        pass
+        egg_link = egg_link_path_from_location(self.raw_name)
+        if egg_link:
+            location = egg_link
+        elif self.location:
+            location = self.location
+        else:
+            return None
+        return normalize_path(location)
 
     @property
     def info_location(self) -> str | None:
-        pass
+        return self._dist.egg_info
 
     @property
     def installed_by_distutils(self) -> bool:
         # A distutils-installed distribution is provided by FileMetadata. This
         # provider has a "path" attribute not present anywhere else. Not the
         # best introspection logic, but pip has been doing this for a long time.
-        pass
+        try:
+            return bool(self._dist._provider.path)
+        except AttributeError:
+            return False
 
     @property
     def canonical_name(self) -> NormalizedName:
-        pass
+        return canonicalize_name(self._dist.project_name)
 
     @property
     def version(self) -> Version:
@@ -175,7 +190,7 @@ class Distribution(BaseDistribution):
 
     @property
     def raw_version(self) -> str:
-        pass
+        return self._dist.version
 
     def is_file(self, path: InfoPath) -> bool:
         return self._dist.has_metadata(str(path))

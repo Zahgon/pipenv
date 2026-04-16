@@ -26,7 +26,7 @@ except ImportError:  # pragma: no cover
             pass
 
         def createLock(self):
-            pass
+            self.lock = None
 
 
 logger = logging.getLogger(__name__)

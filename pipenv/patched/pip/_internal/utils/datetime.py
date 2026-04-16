@@ -5,7 +5,10 @@ import sys
 
 
 def today_is_later_than(year: int, month: int, day: int) -> bool:
-    pass
+    today = datetime.date.today()
+    given = datetime.date(year, month, day)
+
+    return today > given
 
 
 def parse_iso_datetime(isodate: str) -> datetime.datetime:

@@ -210,7 +210,14 @@ class InstallRequirement:
 
     def format_debug(self) -> str:
         """An un-tested helper for getting state, for debugging."""
-        pass
+        attributes = vars(self)
+        names = sorted(attributes)
+
+        state = (f"{attr}={attributes[attr]!r}" for attr in sorted(names))
+        return "<{name} object: {{{state}}}>".format(
+            name=self.__class__.__name__,
+            state=", ".join(state),
+        )
 
     # Things that are valid for all kinds of requirements?
     @property
@@ -221,16 +228,23 @@ class InstallRequirement:
 
     @functools.cached_property
     def supports_pyproject_editable(self) -> bool:
-        pass
+        assert self.pep517_backend
+        with self.build_env:
+            runner = runner_with_spinner_message(
+                "Checking if build backend supports build_editable"
+            )
+            with self.pep517_backend.subprocess_runner(runner):
+                return "build_editable" in self.pep517_backend._supported_features()
 
     @property
     def specifier(self) -> SpecifierSet:
-        pass
+        assert self.req is not None
+        return self.req.specifier
 
     @property
     def is_direct(self) -> bool:
         """Whether this requirement was specified as a direct URL."""
-        pass
+        return self.original_link is not None
 
     @property
     def is_pinned(self) -> bool:
@@ -262,7 +276,7 @@ class InstallRequirement:
         URL do not.
 
         """
-        pass
+        return bool(self.hash_options)
 
     def hashes(self, trust_internet: bool = True) -> Hashes:
         """Return a hash-comparer that considers my option- and URL-based
@@ -429,26 +443,35 @@ class InstallRequirement:
     # Things valid for wheels
     @property
     def is_wheel(self) -> bool:
-        pass
+        if not self.link:
+            return False
+        return self.link.is_wheel
 
     @property
     def is_wheel_from_cache(self) -> bool:
         # When True, it means that this InstallRequirement is a local wheel file in the
         # cache of locally built wheels.
-        pass
+        return self.cached_wheel_source_link is not None
 
     # Things valid for sdists
     @property
     def unpacked_source_directory(self) -> str:
-        pass
+        assert self.source_dir, f"No source dir for {self}"
+        return os.path.join(
+            self.source_dir, self.link and self.link.subdirectory_fragment or ""
+        )
 
     @property
     def setup_py_path(self) -> str:
-        pass
+        assert self.source_dir, f"No source dir for {self}"
+        setup_py = os.path.join(self.unpacked_source_directory, "setup.py")
+
+        return setup_py
 
     @property
     def pyproject_toml_path(self) -> str:
-        pass
+        assert self.source_dir, f"No source dir for {self}"
+        return make_pyproject_path(self.unpacked_source_directory)
 
     def load_pyproject_toml(self) -> None:
         """Load the pyproject.toml file.
@@ -817,4 +840,9 @@ def check_invalid_constraint_type(req: InstallRequirement) -> str:
 
 
 def _has_option(options: Values, reqs: list[InstallRequirement], option: str) -> bool:
-    pass
+    if getattr(options, option, None):
+        return True
+    for req in reqs:
+        if getattr(req, option, None):
+            return True
+    return False

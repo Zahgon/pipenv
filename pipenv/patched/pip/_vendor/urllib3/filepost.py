@@ -54,7 +54,10 @@ def iter_fields(fields):
 
     Supports list of (k, v) tuples and dicts.
     """
-    pass
+    if isinstance(fields, dict):
+        return ((k, v) for k, v in six.iteritems(fields))
+
+    return ((k, v) for k, v in fields)
 
 
 def encode_multipart_formdata(fields, boundary=None):

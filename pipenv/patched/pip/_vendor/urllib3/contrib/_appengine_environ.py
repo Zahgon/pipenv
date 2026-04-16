@@ -33,4 +33,4 @@ def is_prod_appengine():
 
 def is_prod_appengine_mvms():
     """Deprecated."""
-    pass
+    return False

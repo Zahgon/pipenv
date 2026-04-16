@@ -293,7 +293,11 @@ class HTTPResponse(io.IOBase):
     @property
     def data(self):
         # For backwards-compat with earlier urllib3 0.4 and earlier.
-        pass
+        if self._body:
+            return self._body
+
+        if self._fp:
+            return self.read(cache_content=True)
 
     @property
     def connection(self):
@@ -314,7 +318,53 @@ class HTTPResponse(io.IOBase):
         """
         Set initial length value for Response content if available.
         """
-        pass
+        length = self.headers.get("content-length")
+
+        if length is not None:
+            if self.chunked:
+                # This Response will fail with an IncompleteRead if it can't be
+                # received as chunked. This method falls back to attempt reading
+                # the response before raising an exception.
+                log.warning(
+                    "Received response with both Content-Length and "
+                    "Transfer-Encoding set. This is expressly forbidden "
+                    "by RFC 7230 sec 3.3.2. Ignoring Content-Length and "
+                    "attempting to process response as Transfer-Encoding: "
+                    "chunked."
+                )
+                return None
+
+            try:
+                # RFC 7230 section 3.3.2 specifies multiple content lengths can
+                # be sent in a single Content-Length header
+                # (e.g. Content-Length: 42, 42). This line ensures the values
+                # are all valid ints and that as long as the `set` length is 1,
+                # all values are the same. Otherwise, the header is invalid.
+                lengths = set([int(val) for val in length.split(",")])
+                if len(lengths) > 1:
+                    raise InvalidHeader(
+                        "Content-Length contained multiple "
+                        "unmatching values (%s)" % length
+                    )
+                length = lengths.pop()
+            except ValueError:
+                length = None
+            else:
+                if length < 0:
+                    length = None
+
+        # Convert status to int for comparison
+        # In some cases, httplib returns a status of "_UNKNOWN"
+        try:
+            status = int(self.status)
+        except ValueError:
+            status = 0
+
+        # Check for responses that shouldn't include a body
+        if status in (204, 304) or 100 <= status < 200 or request_method == "HEAD":
+            length = 0
+
+        return length
 
     def _init_decoder(self):
         """
@@ -608,10 +658,22 @@ class HTTPResponse(io.IOBase):
 
     # Backwards-compatibility methods for http.client.HTTPResponse
     def getheaders(self):
-        pass
+        warnings.warn(
+            "HTTPResponse.getheaders() is deprecated and will be removed "
+            "in urllib3 v2.1.0. Instead access HTTPResponse.headers directly.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.headers
 
     def getheader(self, name, default=None):
-        pass
+        warnings.warn(
+            "HTTPResponse.getheader() is deprecated and will be removed "
+            "in urllib3 v2.1.0. Instead use HTTPResponse.headers.get(name, default).",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.headers.get(name, default)
 
     # Backwards compatibility for http.cookiejar
     def info(self):
@@ -630,7 +692,16 @@ class HTTPResponse(io.IOBase):
 
     @property
     def closed(self):
-        pass
+        if not self.auto_close:
+            return io.IOBase.closed.__get__(self)
+        elif self._fp is None:
+            return True
+        elif hasattr(self._fp, "isclosed"):
+            return self._fp.isclosed()
+        elif hasattr(self._fp, "closed"):
+            return self._fp.closed
+        else:
+            return True
 
     def fileno(self):
         if self._fp is None:
@@ -653,11 +724,16 @@ class HTTPResponse(io.IOBase):
 
     def readable(self):
         # This method is required for `io` module compatibility.
-        pass
+        return True
 
     def readinto(self, b):
         # This method is required for `io` module compatibility.
-        pass
+        temp = self.read(len(b))
+        if len(temp) == 0:
+            return 0
+        else:
+            b[: len(temp)] = temp
+            return len(temp)
 
     def supports_chunked_reads(self):
         """

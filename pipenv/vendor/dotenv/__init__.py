@@ -21,7 +21,22 @@ def get_cli_string(
     Useful for converting a arguments passed to a fabric task
     to be passed to a `local` or `run` command.
     """
-    pass
+    command = ["dotenv"]
+    if quote:
+        command.append(f"-q {quote}")
+    if path:
+        command.append(f"-f {path}")
+    if action:
+        command.append(action)
+        if key:
+            command.append(key)
+            if value:
+                if " " in value:
+                    command.append(f'"{value}"')
+                else:
+                    command.append(value)
+
+    return " ".join(command).strip()
 
 
 __all__ = [

@@ -15,7 +15,28 @@ logger = logging.getLogger(__name__)
 
 @contextlib.contextmanager
 def update_env_context_manager(**changes: str) -> Generator[None, None, None]:
-    pass
+    target = os.environ
+
+    # Save values from the target and change them.
+    non_existent_marker = object()
+    saved_values: dict[str, object | str] = {}
+    for name, new_value in changes.items():
+        try:
+            saved_values[name] = target[name]
+        except KeyError:
+            saved_values[name] = non_existent_marker
+        target[name] = new_value
+
+    try:
+        yield
+    finally:
+        # Restore original values in the target.
+        for name, original_value in saved_values.items():
+            if original_value is non_existent_marker:
+                del target[name]
+            else:
+                assert isinstance(original_value, str)  # for mypy
+                target[name] = original_value
 
 
 @contextlib.contextmanager
@@ -62,7 +83,8 @@ class BuildTracker:
         self.cleanup()
 
     def _entry_path(self, key: TrackerId) -> str:
-        pass
+        hashed = hashlib.sha224(key.encode()).hexdigest()
+        return os.path.join(self._root, hashed)
 
     def add(self, req: InstallRequirement, key: TrackerId) -> None:
         """Add an InstallRequirement to build tracking."""

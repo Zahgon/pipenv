@@ -132,7 +132,10 @@ class RevOptions:
 
     @property
     def arg_rev(self) -> str | None:
-        pass
+        if self.rev is None:
+            return self.vc_class.default_arg_rev
+
+        return self.rev
 
     def to_args(self) -> CommandArgs:
         """
@@ -177,15 +180,18 @@ class VcsSupport:
 
     @property
     def backends(self) -> list[VersionControl]:
-        pass
+        return list(self._registry.values())
 
     @property
     def dirnames(self) -> list[str]:
-        pass
+        return [backend.dirname for backend in self.backends]
 
     @property
     def all_schemes(self) -> list[str]:
-        pass
+        schemes: list[str] = []
+        for backend in self.backends:
+            schemes.extend(backend.schemes)
+        return schemes
 
     def register(self, cls: type[VersionControl]) -> None:
         if not hasattr(cls, "name"):
@@ -196,7 +202,8 @@ class VcsSupport:
             logger.debug("Registered VCS backend: %s", cls.name)
 
     def unregister(self, name: str) -> None:
-        pass
+        if name in self._registry:
+            del self._registry[name]
 
     def get_backend_for_dir(self, location: str) -> VersionControl | None:
         """

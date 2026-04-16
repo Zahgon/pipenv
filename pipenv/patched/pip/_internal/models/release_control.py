@@ -30,7 +30,32 @@ class ReleaseControl:
         order so that the original command-line argument sequence can be reconstructed
         when passing options to build subprocesses.
         """
-        pass
+        if value.startswith("-"):
+            raise CommandError(
+                "--all-releases / --only-final option requires 1 argument."
+            )
+        new = value.split(",")
+        while ":all:" in new:
+            other.clear()
+            target.clear()
+            target.add(":all:")
+            # Track :all: in order
+            self._order.append((attr_name, ":all:"))
+            del new[: new.index(":all:") + 1]
+            # Without a none, we want to discard everything as :all: covers it
+            if ":none:" not in new:
+                return
+        for name in new:
+            if name == ":none:":
+                target.clear()
+                # Track :none: in order
+                self._order.append((attr_name, ":none:"))
+                continue
+            name = canonicalize_name(name)
+            other.discard(name)
+            target.add(name)
+            # Track package-specific setting in order
+            self._order.append((attr_name, name))
 
     def get_ordered_args(self) -> list[tuple[str, str]]:
         """

@@ -31,11 +31,11 @@ class Script(DataModel):
 
     @property
     def command(self):
-        pass
+        return self._parts[0]
 
     @property
     def args(self):
-        pass
+        return self._parts[1:]
 
     def cmdify(self, extra_args=None):
         """Encode into a cmd-executable string.

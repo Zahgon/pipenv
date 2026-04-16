@@ -68,7 +68,9 @@ class Wheel:
         :raises ValueError: If none of the wheel's file tags match one of
             the supported tags.
         """
-        pass
+        return min(
+            tag_to_priority[tag] for tag in self.file_tags if tag in tag_to_priority
+        )
 
     def supported(self, tags: Iterable[Tag]) -> bool:
         """Return whether the wheel is compatible with one of the given tags.

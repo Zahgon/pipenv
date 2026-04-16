@@ -50,7 +50,7 @@ class MacOS(PlatformDirsABC):
     @property
     def site_data_path(self) -> Path:
         """:return: data path shared by users. Only return the first item, even if ``multipath`` is set to ``True``"""
-        pass
+        return self._first_item_as_path_if_multipath(self.site_data_dir)
 
     @property
     def user_config_dir(self) -> str:
@@ -77,62 +77,68 @@ class MacOS(PlatformDirsABC):
           the response is a multi-path string separated by ":", e.g.
           ``$homebrew_prefix/var/cache/$appname/$version:/Library/Caches/$appname/$version``
         """
-        pass
+        is_homebrew = "/opt/python" in sys.prefix
+        homebrew_prefix = sys.prefix.split("/opt/python")[0] if is_homebrew else ""
+        path_list = [self._append_app_name_and_version(f"{homebrew_prefix}/var/cache")] if is_homebrew else []
+        path_list.append(self._append_app_name_and_version("/Library/Caches"))
+        if self.multipath:
+            return os.pathsep.join(path_list)
+        return path_list[0]
 
     @property
     def site_cache_path(self) -> Path:
         """:return: cache path shared by users. Only return the first item, even if ``multipath`` is set to ``True``"""
-        pass
+        return self._first_item_as_path_if_multipath(self.site_cache_dir)
 
     @property
     def user_state_dir(self) -> str:
         """:return: state directory tied to the user, same as `user_data_dir`"""
-        pass
+        return self.user_data_dir
 
     @property
     def user_log_dir(self) -> str:
         """:return: log directory tied to the user, e.g. ``~/Library/Logs/$appname/$version``"""
-        pass
+        return self._append_app_name_and_version(os.path.expanduser("~/Library/Logs"))  # noqa: PTH111
 
     @property
     def user_documents_dir(self) -> str:
         """:return: documents directory tied to the user, e.g. ``~/Documents``"""
-        pass
+        return os.path.expanduser("~/Documents")  # noqa: PTH111
 
     @property
     def user_downloads_dir(self) -> str:
         """:return: downloads directory tied to the user, e.g. ``~/Downloads``"""
-        pass
+        return os.path.expanduser("~/Downloads")  # noqa: PTH111
 
     @property
     def user_pictures_dir(self) -> str:
         """:return: pictures directory tied to the user, e.g. ``~/Pictures``"""
-        pass
+        return os.path.expanduser("~/Pictures")  # noqa: PTH111
 
     @property
     def user_videos_dir(self) -> str:
         """:return: videos directory tied to the user, e.g. ``~/Movies``"""
-        pass
+        return os.path.expanduser("~/Movies")  # noqa: PTH111
 
     @property
     def user_music_dir(self) -> str:
         """:return: music directory tied to the user, e.g. ``~/Music``"""
-        pass
+        return os.path.expanduser("~/Music")  # noqa: PTH111
 
     @property
     def user_desktop_dir(self) -> str:
         """:return: desktop directory tied to the user, e.g. ``~/Desktop``"""
-        pass
+        return os.path.expanduser("~/Desktop")  # noqa: PTH111
 
     @property
     def user_runtime_dir(self) -> str:
         """:return: runtime directory tied to the user, e.g. ``~/Library/Caches/TemporaryItems/$appname/$version``"""
-        pass
+        return self._append_app_name_and_version(os.path.expanduser("~/Library/Caches/TemporaryItems"))  # noqa: PTH111
 
     @property
     def site_runtime_dir(self) -> str:
         """:return: runtime directory shared by users, same as `user_runtime_dir`"""
-        pass
+        return self.user_runtime_dir
 
 
 __all__ = [

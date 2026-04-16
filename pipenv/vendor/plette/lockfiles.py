@@ -121,7 +121,7 @@ class Lockfile(DataModel):
             self._data[key] = value
 
     def is_up_to_date(self, pipfile):
-        pass
+        return self.meta.hash == pipfile.get_hash()
 
     def dump(self, f, encoding=None):
         encoder = _LockFileEncoder()
@@ -145,11 +145,14 @@ class Lockfile(DataModel):
 
     @property
     def _meta(self):
-        pass
+        try:
+            return self["_meta"]
+        except KeyError:
+            raise AttributeError("meta")
 
     @_meta.setter
     def _meta(self, value):
-        pass
+        self["_meta"] = value
 
     @property
     def default(self):
@@ -164,8 +167,11 @@ class Lockfile(DataModel):
 
     @property
     def develop(self):
-        pass
+        try:
+            return self["develop"]
+        except KeyError:
+            raise AttributeError("develop")
 
     @develop.setter
     def develop(self, value):
-        pass
+        self["develop"] = value

@@ -247,22 +247,36 @@ class StringType(Enum):
     @property
     def escaped_sequences(self) -> Collection[str]:
         # https://toml.io/en/v1.0.0#string
-        pass
+        escaped_in_basic = CONTROL_CHARS | {"\\"}
+        allowed_in_multiline = {"\n", "\r"}
+        return {
+            StringType.SLB: escaped_in_basic | {'"'},
+            StringType.MLB: (escaped_in_basic | {'"""'}) - allowed_in_multiline,
+            StringType.SLL: (),
+            StringType.MLL: (),
+        }[self]
 
     @property
     def invalid_sequences(self) -> Collection[str]:
         # https://toml.io/en/v1.0.0#string
-        pass
+        forbidden_in_literal = CONTROL_CHARS - {"\t"}
+        allowed_in_multiline = {"\n", "\r"}
+        return {
+            StringType.SLB: (),
+            StringType.MLB: (),
+            StringType.SLL: forbidden_in_literal | {"'"},
+            StringType.MLL: (forbidden_in_literal | {"'''"}) - allowed_in_multiline,
+        }[self]
 
     @property
     def unit(self) -> str:
-        pass
+        return self.value[0]
 
     def is_basic(self) -> bool:
         return self in {StringType.SLB, StringType.MLB}
 
     def is_literal(self) -> bool:
-        pass
+        return self in {StringType.SLL, StringType.MLL}
 
     def is_singleline(self) -> bool:
         return self in {StringType.SLB, StringType.SLL}
@@ -407,7 +421,7 @@ class SingleKey(Key):
     @property
     def delimiter(self) -> str:
         """The delimiter: double quote/single quote/none"""
-        pass
+        return self.t.value
 
     def is_bare(self) -> bool:
         """Check if the key is bare"""
@@ -457,7 +471,7 @@ class Item:
     @property
     def trivia(self) -> Trivia:
         """The trivia element associated with this item"""
-        pass
+        return self._trivia
 
     @property
     def discriminant(self) -> int:
@@ -489,7 +503,12 @@ class Item:
 
     def indent(self, indent: int) -> Item:
         """Indent this item with given number of spaces"""
-        pass
+        if self._trivia.indent.startswith("\n"):
+            self._trivia.indent = "\n" + " " * indent
+        else:
+            self._trivia.indent = " " * indent
+
+        return self
 
     def is_boolean(self) -> bool:
         return isinstance(self, Bool)
@@ -498,7 +517,7 @@ class Item:
         return isinstance(self, Table)
 
     def is_inline_table(self) -> bool:
-        pass
+        return isinstance(self, InlineTable)
 
     def is_aot(self) -> bool:
         return isinstance(self, AoT)
@@ -524,7 +543,7 @@ class Whitespace(Item):
 
     @property
     def s(self) -> str:
-        pass
+        return self._s
 
     @property
     def value(self) -> str:
@@ -537,7 +556,7 @@ class Whitespace(Item):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 0
 
     def is_fixed(self) -> bool:
         """If the whitespace is fixed, it can't be merged or discarded from the output."""
@@ -560,7 +579,7 @@ class Comment(Item):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 1
 
     def as_string(self) -> str:
         return (
@@ -598,7 +617,7 @@ class Integer(Item, _CustomInt):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 2
 
     @property
     def value(self) -> int:
@@ -691,7 +710,7 @@ class Float(Item, _CustomFloat):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 3
 
     @property
     def value(self) -> float:
@@ -753,7 +772,7 @@ class Bool(Item):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 4
 
     @property
     def value(self) -> bool:
@@ -850,7 +869,7 @@ class DateTime(Item, datetime):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 5
 
     @property
     def value(self) -> datetime:
@@ -900,7 +919,10 @@ class DateTime(Item, datetime):
         return self._new(super().replace(*args, **kwargs))
 
     def astimezone(self, tz: tzinfo) -> datetime:
-        pass
+        result = super().astimezone(tz)
+        if PY38:
+            return result
+        return self._new(result)
 
     def _new(self, result) -> DateTime:
         raw = result.isoformat()
@@ -959,7 +981,7 @@ class Date(Item, date):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 6
 
     @property
     def value(self) -> date:
@@ -1035,7 +1057,7 @@ class Time(Item, time):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 7
 
     @property
     def value(self) -> time:
@@ -1165,7 +1187,7 @@ class Array(Item, _CustomList):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 8
 
     @property
     def value(self) -> list:
@@ -1593,7 +1615,7 @@ class Table(AbstractTable):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 9
 
     def __copy__(self) -> Table:
         return type(self)(
@@ -1686,7 +1708,19 @@ class Table(AbstractTable):
 
     def indent(self, indent: int) -> Table:
         """Indent the table with given number of spaces."""
-        pass
+        super().indent(indent)
+
+        m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
+        if not m:
+            indent_str = ""
+        else:
+            indent_str = m.group(1)
+
+        for _, item in self._value.body:
+            if not isinstance(item, Whitespace):
+                item.trivia.indent = indent_str + item.trivia.indent
+
+        return self
 
     def invalidate_display_name(self):
         """Call ``invalidate_display_name`` on the contained tables"""
@@ -1721,7 +1755,7 @@ class InlineTable(AbstractTable):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 10
 
     def append(self, key: Key | str | None, _item: Any) -> InlineTable:
         """
@@ -1818,7 +1852,7 @@ class String(str, Item):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 11
 
     @property
     def value(self) -> str:
@@ -1829,7 +1863,7 @@ class String(str, Item):
 
     @property
     def type(self) -> StringType:
-        pass
+        return self._t
 
     def __add__(self: ItemT, other: str) -> ItemT:
         if not isinstance(other, str):
@@ -1887,11 +1921,11 @@ class AoT(Item, _CustomList):
 
     @property
     def body(self) -> list[Table]:
-        pass
+        return self._body
 
     @property
     def discriminant(self) -> int:
-        pass
+        return 12
 
     @property
     def value(self) -> list[dict[Any, Any]]:
@@ -1979,7 +2013,7 @@ class Null(Item):
 
     @property
     def discriminant(self) -> int:
-        pass
+        return -1
 
     @property
     def value(self) -> None:

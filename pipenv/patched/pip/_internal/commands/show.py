@@ -36,7 +36,16 @@ class ShowCommand(Command):
     ignore_require_venv = True
 
     def add_options(self) -> None:
-        pass
+        self.cmd_opts.add_option(
+            "-f",
+            "--files",
+            dest="files",
+            action="store_true",
+            default=False,
+            help="Show the full list of installed files for each package.",
+        )
+
+        self.parser.insert_option_group(0, self.cmd_opts)
 
     def run(self, options: Values, args: list[str]) -> int:
         if not args:

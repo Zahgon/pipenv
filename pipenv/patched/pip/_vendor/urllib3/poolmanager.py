@@ -96,7 +96,33 @@ def _default_key_normalizer(key_class, request_context):
     :return: A namedtuple that can be used as a connection pool key.
     :rtype:  PoolKey
     """
-    pass
+    # Since we mutate the dictionary, make a copy first
+    context = request_context.copy()
+    context["scheme"] = context["scheme"].lower()
+    context["host"] = context["host"].lower()
+
+    # These are both dictionaries and need to be transformed into frozensets
+    for key in ("headers", "_proxy_headers", "_socks_options"):
+        if key in context and context[key] is not None:
+            context[key] = frozenset(context[key].items())
+
+    # The socket_options key may be a list and needs to be transformed into a
+    # tuple.
+    socket_opts = context.get("socket_options")
+    if socket_opts is not None:
+        context["socket_options"] = tuple(socket_opts)
+
+    # Map the kwargs to the names in the namedtuple - this is necessary since
+    # namedtuples can't have fields starting with '_'.
+    for key in list(context.keys()):
+        context["key_" + key] = context.pop(key)
+
+    # Default to ``None`` for keys missing from the context
+    for field in key_class._fields:
+        if field not in context:
+            context[field] = None
+
+    return key_class(**context)
 
 
 #: A dictionary that maps a scheme to a callable that creates a pool key.

@@ -70,7 +70,7 @@ class LazyZipOverHTTP:
     @property
     def mode(self) -> str:
         """Opening mode, which is always rb."""
-        pass
+        return "rb"
 
     @property
     def name(self) -> str:
@@ -79,7 +79,7 @@ class LazyZipOverHTTP:
 
     def seekable(self) -> bool:
         """Return whether random access is supported, which is True."""
-        pass
+        return True
 
     def close(self) -> None:
         """Close the file."""
@@ -88,7 +88,7 @@ class LazyZipOverHTTP:
     @property
     def closed(self) -> bool:
         """Whether the file is closed."""
-        pass
+        return self._file.closed
 
     def read(self, size: int = -1) -> bytes:
         """Read up to size bytes from the object and return them.
@@ -106,7 +106,7 @@ class LazyZipOverHTTP:
 
     def readable(self) -> bool:
         """Return whether the file is readable, which is True."""
-        pass
+        return True
 
     def seek(self, offset: int, whence: int = 0) -> int:
         """Change stream position and return the new absolute position.
@@ -134,7 +134,7 @@ class LazyZipOverHTTP:
 
     def writable(self) -> bool:
         """Return False."""
-        pass
+        return False
 
     def __enter__(self) -> LazyZipOverHTTP:
         self._file.__enter__()
@@ -157,7 +157,18 @@ class LazyZipOverHTTP:
 
     def _check_zip(self) -> None:
         """Check and download until the file is a valid ZIP."""
-        pass
+        end = self._length - 1
+        for start in reversed(range(0, end, self._chunk_size)):
+            self._download(start, end)
+            with self._stay():
+                try:
+                    # For read-only ZIP files, ZipFile only needs
+                    # methods read, seek, seekable and tell.
+                    ZipFile(self)
+                except BadZipFile:
+                    pass
+                else:
+                    break
 
     def _stream_response(
         self, start: int, end: int, base_headers: dict[str, str] = HEADERS

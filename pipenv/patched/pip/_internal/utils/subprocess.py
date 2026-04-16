@@ -236,6 +236,13 @@ def runner_with_spinner_message(message: str) -> Callable[..., None]:
         cwd: str | None = None,
         extra_environ: Mapping[str, Any] | None = None,
     ) -> None:
-        pass
+        with open_spinner(message) as spinner:
+            call_subprocess(
+                cmd,
+                command_desc=message,
+                cwd=cwd,
+                extra_environ=extra_environ,
+                spinner=spinner,
+            )
 
     return runner

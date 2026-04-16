@@ -35,100 +35,149 @@ import string
 #
 def DoEmit (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    screen.write_ch(fsm.input_symbol)
 
 def DoStartNumber (fsm):
 
-    pass
+    fsm.memory.append (fsm.input_symbol)
 
 def DoBuildNumber (fsm):
 
-    pass
+    ns = fsm.memory.pop()
+    ns = ns + fsm.input_symbol
+    fsm.memory.append (ns)
 
 def DoBackOne (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    screen.cursor_back ()
 
 def DoBack (fsm):
 
-    pass
+    count = int(fsm.memory.pop())
+    screen = fsm.memory[0]
+    screen.cursor_back (count)
 
 def DoDownOne (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    screen.cursor_down ()
 
 def DoDown (fsm):
 
-    pass
+    count = int(fsm.memory.pop())
+    screen = fsm.memory[0]
+    screen.cursor_down (count)
 
 def DoForwardOne (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    screen.cursor_forward ()
 
 def DoForward (fsm):
 
-    pass
+    count = int(fsm.memory.pop())
+    screen = fsm.memory[0]
+    screen.cursor_forward (count)
 
 def DoUpReverse (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    screen.cursor_up_reverse()
 
 def DoUpOne (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    screen.cursor_up ()
 
 def DoUp (fsm):
 
-    pass
+    count = int(fsm.memory.pop())
+    screen = fsm.memory[0]
+    screen.cursor_up (count)
 
 def DoHome (fsm):
 
-    pass
+    c = int(fsm.memory.pop())
+    r = int(fsm.memory.pop())
+    screen = fsm.memory[0]
+    screen.cursor_home (r,c)
 
 def DoHomeOrigin (fsm):
 
-    pass
+    c = 1
+    r = 1
+    screen = fsm.memory[0]
+    screen.cursor_home (r,c)
 
 def DoEraseDown (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    screen.erase_down()
 
 def DoErase (fsm):
 
-    pass
+    arg = int(fsm.memory.pop())
+    screen = fsm.memory[0]
+    if arg == 0:
+        screen.erase_down()
+    elif arg == 1:
+        screen.erase_up()
+    elif arg == 2:
+        screen.erase_screen()
 
 def DoEraseEndOfLine (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    screen.erase_end_of_line()
 
 def DoEraseLine (fsm):
 
-    pass
+    arg = int(fsm.memory.pop())
+    screen = fsm.memory[0]
+    if arg == 0:
+        screen.erase_end_of_line()
+    elif arg == 1:
+        screen.erase_start_of_line()
+    elif arg == 2:
+        screen.erase_line()
 
 def DoEnableScroll (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    screen.scroll_screen()
 
 def DoCursorSave (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    screen.cursor_save_attrs()
 
 def DoCursorRestore (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    screen.cursor_restore_attrs()
 
 def DoScrollRegion (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    r2 = int(fsm.memory.pop())
+    r1 = int(fsm.memory.pop())
+    screen.scroll_screen_rows (r1,r2)
 
 def DoMode (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    mode = fsm.memory.pop() # Should be 4
     # screen.setReplaceMode ()
 
 def DoLog (fsm):
 
-    pass
+    screen = fsm.memory[0]
+    fsm.memory = [screen]
+    fout = open ('log', 'a')
+    fout.write (fsm.input_symbol + ',' + fsm.current_state + '\n')
+    fout.close()
 
 class term (screen.screen):
 
@@ -255,18 +304,48 @@ class ANSI (term):
         '''This puts a character at the current cursor position. The cursor
         position is moved forward with wrap-around, but no scrolling is done if
         the cursor hits the lower-right corner of the screen. '''
-        pass
+
+        if isinstance(ch, bytes):
+            ch = self._decode(ch)
+
+        #\r and \n both produce a call to cr() and lf(), respectively.
+        ch = ch[0]
+
+        if ch == u'\r':
+            self.cr()
+            return
+        if ch == u'\n':
+            self.crlf()
+            return
+        if ch == chr(screen.BS):
+            self.cursor_back()
+            return
+        self.put_abs(self.cur_r, self.cur_c, ch)
+        old_r = self.cur_r
+        old_c = self.cur_c
+        self.cursor_forward()
+        if old_c == self.cur_c:
+            self.cursor_down()
+            if old_r != self.cur_r:
+                self.cursor_home (self.cur_r, 1)
+            else:
+                self.scroll_up ()
+                self.cursor_home (self.cur_r, 1)
+                self.erase_line()
 
     def do_sgr (self, fsm):
         '''Select Graphic Rendition, e.g. color. '''
-        pass
+        screen = fsm.memory[0]
+        fsm.memory = [screen]
 
     def do_decsca (self, fsm):
         '''Select character protection attribute. '''
-        pass
+        screen = fsm.memory[0]
+        fsm.memory = [screen]
 
     def do_modecrap (self, fsm):
         '''Handler for \x1b[?<number>h and \x1b[?<number>l. If anyone
         wanted to actually use these, they'd need to add more states to the
         FSM rather than just improve or override this method. '''
-        pass
+        screen = fsm.memory[0]
+        fsm.memory = [screen]

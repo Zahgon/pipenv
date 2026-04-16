@@ -60,7 +60,7 @@ class Hashes:
 
     @property
     def digest_count(self) -> int:
-        pass
+        return sum(len(digests) for digests in self._allowed.values())
 
     def is_hash_allowed(self, hash_name: str, hex_digest: str) -> bool:
         """Return whether the given hex digest is allowed."""

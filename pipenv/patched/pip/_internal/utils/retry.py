@@ -11,7 +11,9 @@ if TYPE_CHECKING:
     P = ParamSpec("P")
 
 
-def retry(wait: float, stop_after_delay: float) -> Callable[[Callable[P, T]], Callable[P, T]]:
+def retry(
+    wait: float, stop_after_delay: float
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """Decorator to automatically retry a function on error.
 
     If the function raises, the function is recalled with the same arguments
@@ -26,9 +28,18 @@ def retry(wait: float, stop_after_delay: float) -> Callable[[Callable[P, T]], Ca
     def wrapper(func: Callable[P, T]) -> Callable[P, T]:
 
         @functools.wraps(func)
-        def inner(*args: P.args, **kwargs: P.kwargs) -> T:
-            pass
+        def retry_wrapped(*args: P.args, **kwargs: P.kwargs) -> T:
+            # The performance counter is monotonic on all platforms we care
+            # about and has much better resolution than time.monotonic().
+            start_time = perf_counter()
+            while True:
+                try:
+                    return func(*args, **kwargs)
+                except Exception:
+                    if perf_counter() - start_time > stop_after_delay:
+                        raise
+                    sleep(wait)
 
-        return inner
+        return retry_wrapped
 
     return wrapper

@@ -233,7 +233,28 @@ class Text(JupyterMixin):
         Returns:
             str: A string potentially creating markup tags.
         """
-        pass
+        from .markup import escape
+
+        output: List[str] = []
+
+        plain = self.plain
+        markup_spans = [
+            (0, False, self.style),
+            *((span.start, False, span.style) for span in self._spans),
+            *((span.end, True, span.style) for span in self._spans),
+            (len(plain), True, self.style),
+        ]
+        markup_spans.sort(key=itemgetter(0, 1))
+        position = 0
+        append = output.append
+        for offset, closing, style in markup_spans:
+            if offset > position:
+                append(escape(plain[position:offset]))
+                position = offset
+            if style:
+                append(f"[/{style}]" if closing else f"[{style}]")
+        markup = "".join(output)
+        return markup
 
     @classmethod
     def from_markup(
@@ -381,22 +402,30 @@ class Text(JupyterMixin):
     @property
     def plain(self) -> str:
         """Get the text as a single string."""
-        pass
+        if len(self._text) != 1:
+            self._text[:] = ["".join(self._text)]
+        return self._text[0]
 
     @plain.setter
     def plain(self, new_text: str) -> None:
         """Set the text to a new value."""
-        pass
+        if new_text != self.plain:
+            sanitized_text = strip_control_codes(new_text)
+            self._text[:] = [sanitized_text]
+            old_length = self._length
+            self._length = len(sanitized_text)
+            if old_length > self._length:
+                self._trim_spans()
 
     @property
     def spans(self) -> List[Span]:
         """Get a reference to the internal list of spans."""
-        pass
+        return self._spans
 
     @spans.setter
     def spans(self, spans: List[Span]) -> None:
         """Set spans."""
-        pass
+        self._spans = spans[:]
 
     def blank_copy(self, plain: str = "") -> "Text":
         """Return a new Text instance with copied metadata (but not the string or spans)."""
@@ -506,7 +535,10 @@ class Text(JupyterMixin):
         Returns:
             Text: Self is returned to method may be chained.
         """
-        pass
+        meta = {} if meta is None else meta
+        meta.update({f"@{key}": value for key, value in handlers.items()})
+        self.stylize(Style.from_meta(meta))
+        return self
 
     def remove_suffix(self, suffix: str) -> None:
         """Remove a suffix if it exists.
@@ -854,7 +886,17 @@ class Text(JupyterMixin):
 
     def _trim_spans(self) -> None:
         """Remove or modify any spans that are over the end of the text."""
-        pass
+        max_offset = len(self.plain)
+        _Span = Span
+        self._spans[:] = [
+            (
+                span
+                if span.end < max_offset
+                else _Span(span.start, min(max_offset, span.end), span.style)
+            )
+            for span in self._spans
+            if span.start < max_offset
+        ]
 
     def pad(self, count: int, character: str = " ") -> None:
         """Pad left and right with a given number of characters.
@@ -863,7 +905,15 @@ class Text(JupyterMixin):
             count (int): Width of padding.
             character (str): The character to pad with. Must be a string of length 1.
         """
-        pass
+        assert len(character) == 1, "Character must be a string of length 1"
+        if count:
+            pad_characters = character * count
+            self.plain = f"{pad_characters}{self.plain}{pad_characters}"
+            _Span = Span
+            self._spans[:] = [
+                _Span(start + count, end + count, style)
+                for start, end, style in self._spans
+            ]
 
     def pad_left(self, count: int, character: str = " ") -> None:
         """Pad the left with a given character.
@@ -900,7 +950,17 @@ class Text(JupyterMixin):
             width (int): Desired width.
             character (str, optional): Character to pad with. Defaults to " ".
         """
-        pass
+        self.truncate(width)
+        excess_space = width - cell_len(self.plain)
+        if excess_space:
+            if align == "left":
+                self.pad_right(excess_space, character)
+            elif align == "center":
+                left = excess_space // 2
+                self.pad_left(left, character)
+                self.pad_right(excess_space - left, character)
+            else:
+                self.pad_left(excess_space, character)
 
     def append(
         self, text: Union["Text", str], style: Optional[Union[str, "Style"]] = None

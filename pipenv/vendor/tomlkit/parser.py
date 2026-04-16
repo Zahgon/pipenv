@@ -72,15 +72,15 @@ class Parser:
 
     @property
     def _idx(self):
-        pass
+        return self._src.idx
 
     @property
     def _current(self):
-        pass
+        return self._src.current
 
     @property
     def _marker(self):
-        pass
+        return self._src.marker
 
     def extract(self) -> str:
         """

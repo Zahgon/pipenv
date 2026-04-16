@@ -82,7 +82,16 @@ def check_compatibility(urllib3_version, chardet_version, charset_normalizer_ver
 
 def _check_cryptography(cryptography_version):
     # cryptography < 1.3.4
-    pass
+    try:
+        cryptography_version = list(map(int, cryptography_version.split(".")))
+    except ValueError:
+        return
+
+    if cryptography_version < [1, 3, 4]:
+        warning = "Old version of cryptography ({}) may cause slowdown.".format(
+            cryptography_version
+        )
+        warnings.warn(warning, RequestsDependencyWarning)
 
 
 # Check imported dependencies for compatibility.

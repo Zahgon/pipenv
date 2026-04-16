@@ -45,7 +45,9 @@ def raise_option_error(parser: OptionParser, option: Option, msg: str) -> None:
       option: an Option instance.
       msg: the error text.
     """
-    pass
+    msg = f"{option} error: {msg}"
+    msg = textwrap.fill(" ".join(msg.split()))
+    parser.error(msg)
 
 
 def make_option_group(group: dict[str, Any], parser: ConfigOptionParser) -> OptionGroup:
@@ -124,11 +126,11 @@ def check_build_constraints(options: Values) -> None:
 
 
 def _path_option_check(option: Option, opt: str, value: str) -> str:
-    pass
+    return os.path.expanduser(value)
 
 
 def _package_name_option_check(option: Option, opt: str, value: str) -> str:
-    pass
+    return canonicalize_name(value)
 
 
 class PipOption(Option):
@@ -333,7 +335,18 @@ timeout: Callable[..., Option] = partial(
 
 
 def exists_action() -> Option:
-    pass
+    return Option(
+        # Option when path already exist
+        "--exists-action",
+        dest="exists_action",
+        type="choice",
+        choices=["s", "i", "w", "b", "a"],
+        default=[],
+        action="append",
+        metavar="action",
+        help="Default action when a path already exists: "
+        "(s)witch, (i)gnore, (w)ipe, (b)ackup, (a)bort.",
+    )
 
 
 cert: Callable[..., Option] = partial(
@@ -377,7 +390,16 @@ index_url: Callable[..., Option] = partial(
 
 
 def extra_index_url() -> Option:
-    pass
+    return Option(
+        "--extra-index-url",
+        dest="extra_index_urls",
+        metavar="URL",
+        action="append",
+        default=[],
+        help="Extra URLs of package indexes to use in addition to "
+        "--index-url. Should follow the same rules as "
+        "--index-url.",
+    )
 
 
 no_index: Callable[..., Option] = partial(
@@ -391,7 +413,19 @@ no_index: Callable[..., Option] = partial(
 
 
 def find_links() -> Option:
-    pass
+    return Option(
+        "-f",
+        "--find-links",
+        dest="find_links",
+        action="append",
+        default=[],
+        metavar="url",
+        help="If a URL or path to an html file, then parse for links to "
+        "archives such as sdist (.tar.gz) or wheel (.whl) files. "
+        "If a local path or file:// URL that's a directory, "
+        "then look for archives in the directory listing. "
+        "Links to VCS project URLs are not supported.",
+    )
 
 
 def _handle_uploaded_prior_to(
@@ -407,23 +441,79 @@ def _handle_uploaded_prior_to(
     as specified in the simple repository API:
     https://packaging.python.org/en/latest/specifications/simple-repository-api/
     """
-    pass
+    if value is None:
+        return None
+
+    try:
+        uploaded_prior_to = parse_iso_datetime(value)
+        # Use local timezone if no offset is given in the ISO string.
+        if uploaded_prior_to.tzinfo is None:
+            uploaded_prior_to = uploaded_prior_to.astimezone()
+        parser.values.uploaded_prior_to = uploaded_prior_to
+    except ValueError as exc:
+        msg = (
+            f"invalid value: {value!r}: {exc}. "
+            f"Expected an ISO 8601 datetime string, "
+            f"e.g '2023-01-01' or '2023-01-01T00:00:00Z'"
+        )
+        raise_option_error(parser, option=option, msg=msg)
 
 
 def uploaded_prior_to() -> Option:
-    pass
+    return Option(
+        "--uploaded-prior-to",
+        dest="uploaded_prior_to",
+        metavar="datetime",
+        action="callback",
+        callback=_handle_uploaded_prior_to,
+        type="str",
+        help=(
+            "Only consider packages uploaded prior to the given date time. "
+            "Accepts ISO 8601 strings (e.g., '2023-01-01T00:00:00Z'). "
+            "Uses local timezone if none specified. Only effective when "
+            "installing from indexes that provide upload-time metadata."
+        ),
+    )
 
 
 def trusted_host() -> Option:
-    pass
+    return Option(
+        "--trusted-host",
+        dest="trusted_hosts",
+        action="append",
+        metavar="HOSTNAME",
+        default=[],
+        help="Mark this host or host:port pair as trusted, even though it "
+        "does not have valid or any HTTPS.",
+    )
 
 
 def constraints() -> Option:
-    pass
+    return Option(
+        "-c",
+        "--constraint",
+        dest="constraints",
+        action="append",
+        default=[],
+        metavar="file",
+        help="Constrain versions using the given constraints file. "
+        "This option can be used multiple times.",
+    )
 
 
 def build_constraints() -> Option:
-    pass
+    return Option(
+        "--build-constraint",
+        dest="build_constraints",
+        action="append",
+        type="str",
+        default=[],
+        metavar="file",
+        help=(
+            "Constrain build dependencies using the given constraints file. "
+            "This option can be used multiple times."
+        ),
+    )
 
 
 def requirements() -> Option:
@@ -440,15 +530,35 @@ def requirements() -> Option:
 
 
 def requirements_from_scripts() -> Option:
-    pass
+    return Option(
+        "--requirements-from-script",
+        action="append",
+        default=[],
+        dest="requirements_from_scripts",
+        metavar="file",
+        help="Install dependencies of the given script file"
+        "as defined by PEP 723 inline metadata. ",
+    )
 
 
 def editable() -> Option:
-    pass
+    return Option(
+        "-e",
+        "--editable",
+        dest="editables",
+        action="append",
+        default=[],
+        metavar="path/url",
+        help=(
+            "Install a project in editable mode (i.e. setuptools "
+            '"develop mode") from a local project path or a VCS url.'
+        ),
+    )
 
 
 def _handle_src(option: Option, opt_str: str, value: str, parser: OptionParser) -> None:
-    pass
+    value = os.path.abspath(value)
+    setattr(parser.values, option.dest, value)
 
 
 src: Callable[..., Option] = partial(
@@ -471,52 +581,129 @@ src: Callable[..., Option] = partial(
 
 def _get_format_control(values: Values, option: Option) -> Any:
     """Get a format_control object."""
-    pass
+    return getattr(values, option.dest)
 
 
 def _handle_no_binary(
     option: Option, opt_str: str, value: str, parser: OptionParser
 ) -> None:
-    pass
+    existing = _get_format_control(parser.values, option)
+    FormatControl.handle_mutual_excludes(
+        value,
+        existing.no_binary,
+        existing.only_binary,
+    )
 
 
 def _handle_only_binary(
     option: Option, opt_str: str, value: str, parser: OptionParser
 ) -> None:
-    pass
+    existing = _get_format_control(parser.values, option)
+    FormatControl.handle_mutual_excludes(
+        value,
+        existing.only_binary,
+        existing.no_binary,
+    )
 
 
 def no_binary() -> Option:
-    pass
+    format_control = FormatControl(set(), set())
+    return Option(
+        "--no-binary",
+        dest="format_control",
+        action="callback",
+        callback=_handle_no_binary,
+        type="str",
+        default=format_control,
+        help="Do not use binary packages. Can be supplied multiple times, and "
+        'each time adds to the existing value. Accepts either ":all:" to '
+        'disable all binary packages, ":none:" to empty the set (notice '
+        "the colons), or one or more package names with commas between "
+        "them (no colons). Note that some packages are tricky to compile "
+        "and may fail to install when this option is used on them.",
+    )
 
 
 def only_binary() -> Option:
-    pass
+    format_control = FormatControl(set(), set())
+    return Option(
+        "--only-binary",
+        dest="format_control",
+        action="callback",
+        callback=_handle_only_binary,
+        type="str",
+        default=format_control,
+        help="Do not use source packages. Can be supplied multiple times, and "
+        'each time adds to the existing value. Accepts either ":all:" to '
+        'disable all source packages, ":none:" to empty the set, or one '
+        "or more package names with commas between them. Packages "
+        "without binary distributions will fail to install when this "
+        "option is used on them.",
+    )
 
 
 def _get_release_control(values: Values, option: Option) -> Any:
     """Get a release_control object."""
-    pass
+    return getattr(values, option.dest)
 
 
 def _handle_all_releases(
     option: Option, opt_str: str, value: str, parser: OptionParser
 ) -> None:
-    pass
+    existing = _get_release_control(parser.values, option)
+    existing.handle_mutual_excludes(
+        value,
+        existing.all_releases,
+        existing.only_final,
+        "all_releases",
+    )
 
 
 def _handle_only_final(
     option: Option, opt_str: str, value: str, parser: OptionParser
 ) -> None:
-    pass
+    existing = _get_release_control(parser.values, option)
+    existing.handle_mutual_excludes(
+        value,
+        existing.only_final,
+        existing.all_releases,
+        "only_final",
+    )
 
 
 def all_releases() -> Option:
-    pass
+    release_control = ReleaseControl(set(), set())
+    return Option(
+        "--all-releases",
+        dest="release_control",
+        action="callback",
+        callback=_handle_all_releases,
+        type="str",
+        default=release_control,
+        help="Allow all release types (including pre-releases) for a package. "
+        "Can be supplied multiple times, and each time adds to the existing "
+        'value. Accepts either ":all:" to allow pre-releases for all '
+        'packages, ":none:" to empty the set (notice the colons), or one or '
+        "more package names with commas between them (no colons). Cannot be "
+        "used with --pre.",
+    )
 
 
 def only_final() -> Option:
-    pass
+    release_control = ReleaseControl(set(), set())
+    return Option(
+        "--only-final",
+        dest="release_control",
+        action="callback",
+        callback=_handle_only_final,
+        type="str",
+        default=release_control,
+        help="Only allow final releases (no pre-releases) for a package. Can be "
+        "supplied multiple times, and each time adds to the existing value. "
+        'Accepts either ":all:" to disable pre-releases for all packages, '
+        '":none:" to empty the set, or one or more package names with commas '
+        "between them. Cannot be used with --pre.",
+    )
 
 
 def check_release_control_exclusive(options: Values) -> None:
@@ -558,7 +745,26 @@ def _convert_python_version(value: str) -> tuple[tuple[int, ...], str | None]:
     :return: A 2-tuple (version_info, error_msg), where `error_msg` is
         non-None if and only if there was a parsing error.
     """
-    pass
+    if not value:
+        # The empty string is the same as not providing a value.
+        return (None, None)
+
+    parts = value.split(".")
+    if len(parts) > 3:
+        return ((), "at most three version parts are allowed")
+
+    if len(parts) == 1:
+        # Then we are in the case of "3" or "37".
+        value = parts[0]
+        if len(value) > 1:
+            parts = [value[0], value[1:]]
+
+    try:
+        version_info = tuple(int(part) for part in parts)
+    except ValueError:
+        return ((), "each version part must be an integer")
+
+    return (version_info, None)
 
 
 def _handle_python_version(
@@ -567,7 +773,12 @@ def _handle_python_version(
     """
     Handle a provided --python-version value.
     """
-    pass
+    version_info, error_msg = _convert_python_version(value)
+    if error_msg is not None:
+        msg = f"invalid --python-version value: {value!r}: {error_msg}"
+        raise_option_error(parser, option=option, msg=msg)
+
+    parser.values.python_version = version_info
 
 
 python_version: Callable[..., Option] = partial(
@@ -626,7 +837,10 @@ abis: Callable[..., Option] = partial(
 
 
 def add_target_python_options(cmd_opts: OptionGroup) -> None:
-    pass
+    cmd_opts.add_option(platforms())
+    cmd_opts.add_option(python_version())
+    cmd_opts.add_option(implementation())
+    cmd_opts.add_option(abis())
 
 
 def make_target_python(options: Values) -> TargetPython:
@@ -641,7 +855,16 @@ def make_target_python(options: Values) -> TargetPython:
 
 
 def prefer_binary() -> Option:
-    pass
+    return Option(
+        "--prefer-binary",
+        dest="prefer_binary",
+        action="store_true",
+        default=False,
+        help=(
+            "Prefer binary packages over source packages, even if the "
+            "source packages are newer."
+        ),
+    )
 
 
 cache_dir: Callable[..., Option] = partial(
@@ -663,7 +886,25 @@ def _handle_no_cache_dir(
 
     This is an optparse.Option callback for the --no-cache-dir option.
     """
-    pass
+    # The value argument will be None if --no-cache-dir is passed via the
+    # command-line, since the option doesn't accept arguments.  However,
+    # the value can be non-None if the option is triggered e.g. by an
+    # environment variable, like PIP_NO_CACHE_DIR=true.
+    if value is not None:
+        # Then parse the string value to get argument error-checking.
+        try:
+            strtobool(value)
+        except ValueError as exc:
+            raise_option_error(parser, option=option, msg=str(exc))
+
+    # Originally, setting PIP_NO_CACHE_DIR to a value that strtobool()
+    # converted to 0 (like "false" or "no") caused cache_dir to be disabled
+    # rather than enabled (logic would say the latter).  Thus, we disable
+    # the cache directory not just on values that parse to True, but (for
+    # backwards compatibility reasons) also on values that parse to False.
+    # In other words, always set it to False if the option is provided in
+    # some (valid) form.
+    parser.values.cache_dir = False
 
 
 no_cache: Callable[..., Option] = partial(
@@ -699,7 +940,16 @@ def _handle_dependency_group(
 
     This is an optparse.Option callback for the dependency_groups option.
     """
-    pass
+    path, sep, groupname = value.rpartition(":")
+    if not sep:
+        path = "pyproject.toml"
+    else:
+        # check for 'pyproject.toml' filenames using pathlib
+        if pathlib.PurePath(path).name != "pyproject.toml":
+            msg = "group paths use 'pyproject.toml' filenames"
+            raise_option_error(parser, option=option, msg=msg)
+
+    parser.values.dependency_groups.append((path, groupname))
 
 
 dependency_groups: Callable[..., Option] = partial(
@@ -759,7 +1009,20 @@ use_pep517: Any = partial(
 def _handle_config_settings(
     option: Option, opt_str: str, value: str, parser: OptionParser
 ) -> None:
-    pass
+    key, sep, val = value.partition("=")
+    if sep != "=":
+        parser.error(f"Arguments to {opt_str} must be of the form KEY=VAL")
+    dest = getattr(parser.values, option.dest)
+    if dest is None:
+        dest = {}
+        setattr(parser.values, option.dest, dest)
+    if key in dest:
+        if isinstance(dest[key], list):
+            dest[key].append(val)
+        else:
+            dest[key] = [dest[key], val]
+    else:
+        dest[key] = val
 
 
 config_settings: Callable[..., Option] = partial(
@@ -826,7 +1089,23 @@ def _handle_merge_hash(
 ) -> None:
     """Given a value spelled "algo:digest", append the digest to a list
     pointed to in a dict by the algo name."""
-    pass
+    if not parser.values.hashes:
+        parser.values.hashes = {}
+    try:
+        algo, digest = value.split(":", 1)
+    except ValueError:
+        parser.error(
+            f"Arguments to {opt_str} must be a hash name "
+            "followed by a value, like --hash=sha256:"
+            "abcde..."
+        )
+    if algo not in STRONG_HASHES:
+        parser.error(
+            "Allowed hash algorithms for {} are {}.".format(
+                opt_str, ", ".join(STRONG_HASHES)
+            )
+        )
+    parser.values.hashes.setdefault(algo, []).append(digest)
 
 
 hash: Callable[..., Option] = partial(

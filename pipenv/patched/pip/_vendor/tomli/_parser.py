@@ -246,7 +246,15 @@ class Flags:
         cont.pop(key[-1], None)
 
     def set(self, key: Key, flag: int, *, recursive: bool) -> None:  # noqa: A003
-        pass
+        cont = self._flags
+        key_parent, key_stem = key[:-1], key[-1]
+        for k in key_parent:
+            if k not in cont:
+                cont[k] = {"flags": set(), "recursive_flags": set(), "nested": {}}
+            cont = cont[k]["nested"]
+        if key_stem not in cont:
+            cont[key_stem] = {"flags": set(), "recursive_flags": set(), "nested": {}}
+        cont[key_stem]["recursive_flags" if recursive else "flags"].add(flag)
 
     def is_(self, key: Key, flag: int) -> bool:
         if not key:
@@ -553,15 +561,47 @@ def parse_inline_table(
 def parse_basic_str_escape(
     src: str, pos: Pos, *, multiline: bool = False
 ) -> tuple[Pos, str]:
-    pass
+    escape_id = src[pos : pos + 2]
+    pos += 2
+    if multiline and escape_id in {"\\ ", "\\\t", "\\\n"}:
+        # Skip whitespace until next non-whitespace character or end of
+        # the doc. Error if non-whitespace is found before newline.
+        if escape_id != "\\\n":
+            pos = skip_chars(src, pos, TOML_WS)
+            try:
+                char = src[pos]
+            except IndexError:
+                return pos, ""
+            if char != "\n":
+                raise TOMLDecodeError("Unescaped '\\' in a string", src, pos)
+            pos += 1
+        pos = skip_chars(src, pos, TOML_WS_AND_NEWLINE)
+        return pos, ""
+    if escape_id == "\\u":
+        return parse_hex_char(src, pos, 4)
+    if escape_id == "\\U":
+        return parse_hex_char(src, pos, 8)
+    try:
+        return pos, BASIC_STR_ESCAPE_REPLACEMENTS[escape_id]
+    except KeyError:
+        raise TOMLDecodeError("Unescaped '\\' in a string", src, pos) from None
 
 
 def parse_basic_str_escape_multiline(src: str, pos: Pos) -> tuple[Pos, str]:
-    pass
+    return parse_basic_str_escape(src, pos, multiline=True)
 
 
 def parse_hex_char(src: str, pos: Pos, hex_len: int) -> tuple[Pos, str]:
-    pass
+    hex_str = src[pos : pos + hex_len]
+    if len(hex_str) != hex_len or not HEXDIGIT_CHARS.issuperset(hex_str):
+        raise TOMLDecodeError("Invalid hex value", src, pos)
+    pos += hex_len
+    hex_int = int(hex_str, 16)
+    if not is_unicode_scalar_value(hex_int):
+        raise TOMLDecodeError(
+            "Escaped character is not a Unicode scalar value", src, pos
+        )
+    return pos, chr(hex_int)
 
 
 def parse_literal_str(src: str, pos: Pos) -> tuple[Pos, str]:
@@ -713,7 +753,7 @@ def parse_value(  # noqa: C901
 
 
 def is_unicode_scalar_value(codepoint: int) -> bool:
-    pass
+    return (0 <= codepoint <= 55295) or (57344 <= codepoint <= 1114111)
 
 
 def make_safe_parse_float(parse_float: ParseFloat) -> ParseFloat:
@@ -729,6 +769,9 @@ def make_safe_parse_float(parse_float: ParseFloat) -> ParseFloat:
         return float
 
     def safe_parse_float(float_str: str) -> Any:
-        pass
+        float_value = parse_float(float_str)
+        if isinstance(float_value, (dict, list)):
+            raise ValueError("parse_float must not return dicts or lists")
+        return float_value
 
     return safe_parse_float

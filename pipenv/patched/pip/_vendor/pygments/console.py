@@ -38,11 +38,11 @@ codes["white"] = codes["bold"]
 
 
 def reset_color():
-    pass
+    return codes["reset"]
 
 
 def colorize(color_key, text):
-    pass
+    return codes[color_key] + text + codes["reset"]
 
 
 def ansiformat(attr, text):
@@ -54,4 +54,17 @@ def ansiformat(attr, text):
         _color_     underlined color
         +color+     blinking color
     """
-    pass
+    result = []
+    if attr[:1] == attr[-1:] == '+':
+        result.append(codes['blink'])
+        attr = attr[1:-1]
+    if attr[:1] == attr[-1:] == '*':
+        result.append(codes['bold'])
+        attr = attr[1:-1]
+    if attr[:1] == attr[-1:] == '_':
+        result.append(codes['underline'])
+        attr = attr[1:-1]
+    result.append(codes[attr])
+    result.append(text)
+    result.append(codes['reset'])
+    return ''.join(result)

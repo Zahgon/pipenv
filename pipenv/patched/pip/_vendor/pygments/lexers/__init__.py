@@ -55,7 +55,11 @@ def get_all_lexers(plugins=True):
     If *plugins* is true (the default), plugin lexers supplied by entrypoints
     are also returned.  Otherwise, only builtin ones are considered.
     """
-    pass
+    for item in LEXERS.values():
+        yield item[1:]
+    if plugins:
+        for lexer in find_plugin_lexers():
+            yield lexer.name, lexer.aliases, lexer.filenames, lexer.mimetypes
 
 
 def find_lexer_class(name):
@@ -88,7 +92,19 @@ def find_lexer_class_by_name(_alias):
 
     .. versionadded:: 2.2
     """
-    pass
+    if not _alias:
+        raise ClassNotFound(f'no lexer for alias {_alias!r} found')
+    # lookup builtin lexers
+    for module_name, name, aliases, _, _ in LEXERS.values():
+        if _alias.lower() in aliases:
+            if name not in _lexer_cache:
+                _load_lexers(module_name)
+            return _lexer_cache[name]
+    # continue with lexers from setuptools entrypoints
+    for cls in find_plugin_lexers():
+        if _alias.lower() in cls.aliases:
+            return cls
+    raise ClassNotFound(f'no lexer for alias {_alias!r} found')
 
 
 def get_lexer_by_name(_alias, **options):
@@ -131,7 +147,23 @@ def load_lexer_from_file(filename, lexername="CustomLexer", **options):
 
     .. versionadded:: 2.2
     """
-    pass
+    try:
+        # This empty dict will contain the namespace for the exec'd file
+        custom_namespace = {}
+        with open(filename, 'rb') as f:
+            exec(f.read(), custom_namespace)
+        # Retrieve the class `lexername` from that namespace
+        if lexername not in custom_namespace:
+            raise ClassNotFound(f'no valid {lexername} class found in {filename}')
+        lexer_class = custom_namespace[lexername]
+        # And finally instantiate it with the options
+        return lexer_class(**options)
+    except OSError as err:
+        raise ClassNotFound(f'cannot read {filename}: {err}')
+    except ClassNotFound:
+        raise
+    except Exception as err:
+        raise ClassNotFound(f'error when loading custom lexer: {err}')
 
 
 def find_lexer_class_for_filename(_fn, code=None):
@@ -142,7 +174,39 @@ def find_lexer_class_for_filename(_fn, code=None):
 
     Returns None if not found.
     """
-    pass
+    matches = []
+    fn = basename(_fn)
+    for modname, name, _, filenames, _ in LEXERS.values():
+        for filename in filenames:
+            if _fn_matches(fn, filename):
+                if name not in _lexer_cache:
+                    _load_lexers(modname)
+                matches.append((_lexer_cache[name], filename))
+    for cls in find_plugin_lexers():
+        for filename in cls.filenames:
+            if _fn_matches(fn, filename):
+                matches.append((cls, filename))
+
+    if isinstance(code, bytes):
+        # decode it, since all analyse_text functions expect unicode
+        code = guess_decode(code)
+
+    def get_rating(info):
+        cls, filename = info
+        # explicit patterns get a bonus
+        bonus = '*' not in filename and 0.5 or 0
+        # The class _always_ defines analyse_text because it's included in
+        # the Lexer class.  The default implementation returns None which
+        # gets turned into 0.0.  Run scripts/detect_missing_analyse_text.py
+        # to find lexers which need it overridden.
+        if code:
+            return cls.analyse_text(code) + bonus, cls.__name__
+        return cls.priority + bonus, cls.__name__
+
+    if matches:
+        matches.sort(key=get_rating)
+        # print "Possible lexers, after sort:", matches
+        return matches[-1][0]
 
 
 def get_lexer_for_filename(_fn, code=None, **options):
@@ -158,7 +222,10 @@ def get_lexer_for_filename(_fn, code=None, **options):
     If multiple lexers match the filename pattern, use their ``analyse_text()``
     methods to figure out which one is more appropriate.
     """
-    pass
+    res = find_lexer_class_for_filename(_fn, code)
+    if not res:
+        raise ClassNotFound(f'no lexer for filename {_fn!r} found')
+    return res(**options)
 
 
 def get_lexer_for_mimetype(_mime, **options):
@@ -169,7 +236,15 @@ def get_lexer_for_mimetype(_mime, **options):
     Will raise :exc:`pygments.util.ClassNotFound` if not lexer for that mimetype
     is found.
     """
-    pass
+    for modname, name, _, _, mimetypes in LEXERS.values():
+        if _mime in mimetypes:
+            if name not in _lexer_cache:
+                _load_lexers(modname)
+            return _lexer_cache[name](**options)
+    for cls in find_plugin_lexers():
+        if _mime in cls.mimetypes:
+            return cls(**options)
+    raise ClassNotFound(f'no lexer for mimetype {_mime!r} found')
 
 
 def _iter_lexerclasses(plugins=True):
@@ -220,7 +295,7 @@ def guess_lexer_for_filename(_fn, _text, **options):
         # - is primary filename pattern?
         # - priority
         # - last resort: class name
-        pass
+        return (t[0], primary[t[1]], t[1].priority, t[1].__name__)
     result.sort(key=type_sort)
 
     return result[-1][1](**options)

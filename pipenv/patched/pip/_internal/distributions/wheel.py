@@ -23,7 +23,7 @@ class WheelDistribution(AbstractDistribution):
 
     @property
     def build_tracker_id(self) -> str | None:
-        pass
+        return None
 
     def get_metadata_distribution(self) -> BaseDistribution:
         """Loads the metadata from the wheel file into memory and returns a

@@ -92,13 +92,28 @@ class _BackendPathFinder:
         self.backend_parent, _, _ = backend_module.partition(".")
 
     def find_spec(self, fullname, _path, _target=None):
-        pass
+        if "." in fullname:
+            # Rely on importlib to find nested modules based on parent's path
+            return None
+
+        # Ignore other items in _path or sys.path and use backend_path instead:
+        spec = PathFinder.find_spec(fullname, path=self.backend_path)
+        if spec is None and fullname == self.backend_parent:
+            # According to the spec, the backend MUST be loaded from backend-path.
+            # Therefore, we can halt the import machinery and raise a clean error.
+            msg = f"Cannot find module {self.backend_module!r} in {self.backend_path!r}"
+            raise BackendUnavailable(msg)
+
+        return spec
 
     if sys.version_info >= (3, 8):
 
         def find_distributions(self, context=None):
             # Delayed import: Python 3.7 does not contain importlib.metadata
-            pass
+            from importlib.metadata import DistributionFinder, MetadataPathFinder
+
+            context = DistributionFinder.Context(path=self.backend_path)
+            return MetadataPathFinder.find_distributions(context=context)
 
 
 def _supported_features():
@@ -107,7 +122,11 @@ def _supported_features():
     Returns a list of strings.
     The only possible value is 'build_editable'.
     """
-    pass
+    backend = _build_backend()
+    features = []
+    if hasattr(backend, "build_editable"):
+        features.append("build_editable")
+    return features
 
 
 def get_requires_for_build_wheel(config_settings):
@@ -146,7 +165,20 @@ def prepare_metadata_for_build_wheel(
     Implements a fallback by building a wheel if the hook isn't defined,
     unless _allow_fallback is False in which case HookMissing is raised.
     """
-    pass
+    backend = _build_backend()
+    try:
+        hook = backend.prepare_metadata_for_build_wheel
+    except AttributeError:
+        if not _allow_fallback:
+            raise HookMissing()
+    else:
+        return hook(metadata_directory, config_settings)
+    # fallback to build_wheel outside the try block to avoid exception chaining
+    # which can be confusing to users and is not relevant
+    whl_basename = backend.build_wheel(metadata_directory, config_settings)
+    return _get_wheel_metadata_from_wheel(
+        whl_basename, metadata_directory, config_settings
+    )
 
 
 def prepare_metadata_for_build_editable(
@@ -158,7 +190,23 @@ def prepare_metadata_for_build_editable(
     defined, unless _allow_fallback is False in which case HookMissing is
     raised.
     """
-    pass
+    backend = _build_backend()
+    try:
+        hook = backend.prepare_metadata_for_build_editable
+    except AttributeError:
+        if not _allow_fallback:
+            raise HookMissing()
+        try:
+            build_hook = backend.build_editable
+        except AttributeError:
+            raise HookMissing(hook_name="build_editable")
+        else:
+            whl_basename = build_hook(metadata_directory, config_settings)
+            return _get_wheel_metadata_from_wheel(
+                whl_basename, metadata_directory, config_settings
+            )
+    else:
+        return hook(metadata_directory, config_settings)
 
 
 WHEEL_BUILT_MARKER = "PYPROJECT_HOOKS_ALREADY_BUILT_WHEEL"
@@ -166,7 +214,14 @@ WHEEL_BUILT_MARKER = "PYPROJECT_HOOKS_ALREADY_BUILT_WHEEL"
 
 def _dist_info_files(whl_zip):
     """Identify the .dist-info folder inside a wheel ZipFile."""
-    pass
+    res = []
+    for path in whl_zip.namelist():
+        m = re.match(r"[^/\\]+-[^/\\]+\.dist-info/", path)
+        if m:
+            res.append(path)
+    if res:
+        return res
+    raise Exception("No .dist-info folder found in wheel")
 
 
 def _get_wheel_metadata_from_wheel(whl_basename, metadata_directory, config_settings):
@@ -175,12 +230,39 @@ def _get_wheel_metadata_from_wheel(whl_basename, metadata_directory, config_sett
     Fallback for when the build backend does not
     define the 'get_wheel_metadata' hook.
     """
-    pass
+    from zipfile import ZipFile
+
+    with open(os.path.join(metadata_directory, WHEEL_BUILT_MARKER), "wb"):
+        pass  # Touch marker file
+
+    whl_file = os.path.join(metadata_directory, whl_basename)
+    with ZipFile(whl_file) as zipf:
+        dist_info = _dist_info_files(zipf)
+        zipf.extractall(path=metadata_directory, members=dist_info)
+    return dist_info[0].split("/")[0]
 
 
 def _find_already_built_wheel(metadata_directory):
     """Check for a wheel already built during the get_wheel_metadata hook."""
-    pass
+    if not metadata_directory:
+        return None
+    metadata_parent = os.path.dirname(metadata_directory)
+    if not os.path.isfile(pjoin(metadata_parent, WHEEL_BUILT_MARKER)):
+        return None
+
+    whl_files = glob(os.path.join(metadata_parent, "*.whl"))
+    if not whl_files:
+        print("Found wheel built marker, but no .whl files")
+        return None
+    if len(whl_files) > 1:
+        print(
+            "Found multiple .whl files; unspecified behaviour. "
+            "Will call build_wheel."
+        )
+        return None
+
+    # Exactly one .whl file
+    return whl_files[0]
 
 
 def build_wheel(wheel_directory, config_settings, metadata_directory=None):
@@ -190,7 +272,14 @@ def build_wheel(wheel_directory, config_settings, metadata_directory=None):
     prepare_metadata_for_build_wheel fallback, this
     will copy it rather than rebuilding the wheel.
     """
-    pass
+    prebuilt_whl = _find_already_built_wheel(metadata_directory)
+    if prebuilt_whl:
+        shutil.copy2(prebuilt_whl, wheel_directory)
+        return os.path.basename(prebuilt_whl)
+
+    return _build_backend().build_wheel(
+        wheel_directory, config_settings, metadata_directory
+    )
 
 
 def build_editable(wheel_directory, config_settings, metadata_directory=None):
@@ -200,7 +289,18 @@ def build_editable(wheel_directory, config_settings, metadata_directory=None):
     prepare_metadata_for_build_editable fallback, this
     will copy it rather than rebuilding the wheel.
     """
-    pass
+    backend = _build_backend()
+    try:
+        hook = backend.build_editable
+    except AttributeError:
+        raise HookMissing()
+    else:
+        prebuilt_whl = _find_already_built_wheel(metadata_directory)
+        if prebuilt_whl:
+            shutil.copy2(prebuilt_whl, wheel_directory)
+            return os.path.basename(prebuilt_whl)
+
+        return hook(wheel_directory, config_settings, metadata_directory)
 
 
 def get_requires_for_build_sdist(config_settings):
@@ -208,7 +308,13 @@ def get_requires_for_build_sdist(config_settings):
 
     Returns [] if the hook is not defined.
     """
-    pass
+    backend = _build_backend()
+    try:
+        hook = backend.get_requires_for_build_sdist
+    except AttributeError:
+        return []
+    else:
+        return hook(config_settings)
 
 
 class _DummyException(Exception):
@@ -224,7 +330,11 @@ class GotUnsupportedOperation(Exception):
 
 def build_sdist(sdist_directory, config_settings):
     """Invoke the mandatory build_sdist hook."""
-    pass
+    backend = _build_backend()
+    try:
+        return backend.build_sdist(sdist_directory, config_settings)
+    except getattr(backend, "UnsupportedOperation", _DummyException):
+        raise GotUnsupportedOperation(traceback.format_exc())
 
 
 HOOK_NAMES = {

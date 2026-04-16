@@ -162,7 +162,9 @@ def install(
 
         def ipy_show_traceback(*args: Any, **kwargs: Any) -> None:
             """wrap the default ip.showtraceback to store info for ip._showtraceback"""
-            pass
+            nonlocal tb_data
+            tb_data = kwargs
+            default_showtraceback(*args, **kwargs)
 
         def ipy_display_traceback(
             *args: Any, is_syntax: bool = False, **kwargs: Any

@@ -85,7 +85,8 @@ class Segment(NamedTuple):
         Returns:
             int: A number of cells.
         """
-        pass
+        text, _style, control = self
+        return 0 if control else cell_len(text)
 
     def __rich_repr__(self) -> Result:
         yield self.text
@@ -103,7 +104,7 @@ class Segment(NamedTuple):
     @property
     def is_control(self) -> bool:
         """Check if the segment contains control codes."""
-        pass
+        return self.control is not None
 
     @classmethod
     @lru_cache(1024 * 16)
@@ -555,7 +556,12 @@ class Segment(NamedTuple):
         Yields:
             Segment: Segments with link removed.
         """
-        pass
+        for segment in segments:
+            if segment.control or segment.style is None:
+                yield segment
+            else:
+                text, style, _control = segment
+                yield cls(text, style.update_link(None) if style else None)
 
     @classmethod
     def strip_styles(cls, segments: Iterable["Segment"]) -> Iterable["Segment"]:
@@ -567,7 +573,8 @@ class Segment(NamedTuple):
         Yields:
             Segment: Segments with styles replace with None
         """
-        pass
+        for text, _style, control in segments:
+            yield cls(text, None, control)
 
     @classmethod
     def remove_color(cls, segments: Iterable["Segment"]) -> Iterable["Segment"]:
@@ -579,7 +586,17 @@ class Segment(NamedTuple):
         Yields:
             Segment: Segments with colorless style.
         """
-        pass
+
+        cache: Dict[Style, Style] = {}
+        for text, style, control in segments:
+            if style:
+                colorless_style = cache.get(style)
+                if colorless_style is None:
+                    colorless_style = style.without_color
+                    cache[style] = colorless_style
+                yield cls(text, colorless_style, control)
+            else:
+                yield cls(text, None, control)
 
     @classmethod
     def divide(

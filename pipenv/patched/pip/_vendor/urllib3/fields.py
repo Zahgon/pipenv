@@ -37,7 +37,30 @@ def format_header_param_rfc2231(name, value):
     :ret:
         An RFC-2231-formatted unicode string.
     """
-    pass
+    if isinstance(value, six.binary_type):
+        value = value.decode("utf-8")
+
+    if not any(ch in value for ch in '"\\\r\n'):
+        result = u'%s="%s"' % (name, value)
+        try:
+            result.encode("ascii")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+        else:
+            return result
+
+    if six.PY2:  # Python 2:
+        value = value.encode("utf-8")
+
+    # encode_rfc2231 accepts an encoded string and returns an ascii-encoded
+    # string in Python 2 but accepts and returns unicode strings in Python 3
+    value = email.utils.encode_rfc2231(value, "utf-8")
+    value = "%s*=%s" % (name, value)
+
+    if six.PY2:  # Python 2:
+        value = value.decode("utf-8")
+
+    return value
 
 
 _HTML5_REPLACEMENTS = {
@@ -57,7 +80,16 @@ _HTML5_REPLACEMENTS.update(
 
 
 def _replace_multiple(value, needles_and_replacements):
-    pass
+    def replacer(match):
+        return needles_and_replacements[match.group(0)]
+
+    pattern = re.compile(
+        r"|".join([re.escape(needle) for needle in needles_and_replacements.keys()])
+    )
+
+    result = pattern.sub(replacer, value)
+
+    return result
 
 
 def format_header_param_html5(name, value):
@@ -79,7 +111,12 @@ def format_header_param_html5(name, value):
     :ret:
         A unicode string, stripped of troublesome characters.
     """
-    pass
+    if isinstance(value, six.binary_type):
+        value = value.decode("utf-8")
+
+    value = _replace_multiple(value, _HTML5_REPLACEMENTS)
+
+    return u'%s="%s"' % (name, value)
 
 
 # For backwards-compatibility.

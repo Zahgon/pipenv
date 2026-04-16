@@ -107,7 +107,20 @@ def norm_and_check(source_tree: str, requested: str) -> str:
 
     Return an absolute version of the requested path.
     """
-    pass
+    if os.path.isabs(requested):
+        raise ValueError("paths must be relative")
+
+    abs_source = os.path.abspath(source_tree)
+    abs_requested = os.path.normpath(os.path.join(abs_source, requested))
+    # We have to use commonprefix for Python 2.7 compatibility. So we
+    # normalise case to avoid problems because commonprefix is a character
+    # based comparison :-(
+    norm_source = os.path.normcase(abs_source)
+    norm_requested = os.path.normcase(abs_requested)
+    if os.path.commonprefix([norm_source, norm_requested]) != norm_source:
+        raise ValueError("paths must be inside source tree")
+
+    return abs_requested
 
 
 class BuildBackendHookCaller:
@@ -164,7 +177,7 @@ class BuildBackendHookCaller:
 
     def _supported_features(self) -> Sequence[str]:
         """Return the list of optional features supported by the backend."""
-        pass
+        return self._call_hook("_supported_features", {})
 
     def get_requires_for_build_wheel(
         self,
@@ -208,7 +221,14 @@ class BuildBackendHookCaller:
             wheel via the ``build_wheel`` hook and the dist-info extracted from
             that will be returned.
         """
-        pass
+        return self._call_hook(
+            "prepare_metadata_for_build_wheel",
+            {
+                "metadata_directory": abspath(metadata_directory),
+                "config_settings": config_settings,
+                "_allow_fallback": _allow_fallback,
+            },
+        )
 
     def build_wheel(
         self,
@@ -231,7 +251,16 @@ class BuildBackendHookCaller:
             not be invoked. Instead, the previously built wheel will be copied
             to ``wheel_directory`` and the name of that file will be returned.
         """
-        pass
+        if metadata_directory is not None:
+            metadata_directory = abspath(metadata_directory)
+        return self._call_hook(
+            "build_wheel",
+            {
+                "wheel_directory": abspath(wheel_directory),
+                "config_settings": config_settings,
+                "metadata_directory": metadata_directory,
+            },
+        )
 
     def get_requires_for_build_editable(
         self,
@@ -274,7 +303,14 @@ class BuildBackendHookCaller:
             wheel via the ``build_editable`` hook and the dist-info
             extracted from that will be returned.
         """
-        pass
+        return self._call_hook(
+            "prepare_metadata_for_build_editable",
+            {
+                "metadata_directory": abspath(metadata_directory),
+                "config_settings": config_settings,
+                "_allow_fallback": _allow_fallback,
+            },
+        )
 
     def build_editable(
         self,
@@ -298,7 +334,16 @@ class BuildBackendHookCaller:
             copied to ``wheel_directory`` and the name of that file will be
             returned.
         """
-        pass
+        if metadata_directory is not None:
+            metadata_directory = abspath(metadata_directory)
+        return self._call_hook(
+            "build_editable",
+            {
+                "wheel_directory": abspath(wheel_directory),
+                "config_settings": config_settings,
+                "metadata_directory": metadata_directory,
+            },
+        )
 
     def get_requires_for_build_sdist(
         self,
@@ -308,7 +353,9 @@ class BuildBackendHookCaller:
 
         :returns: A list of :pep:`dependency specifiers <508>`.
         """
-        pass
+        return self._call_hook(
+            "get_requires_for_build_sdist", {"config_settings": config_settings}
+        )
 
     def build_sdist(
         self,
@@ -320,7 +367,13 @@ class BuildBackendHookCaller:
         :returns:
             The name of the newly created sdist within ``wheel_directory``.
         """
-        pass
+        return self._call_hook(
+            "build_sdist",
+            {
+                "sdist_directory": abspath(sdist_directory),
+                "config_settings": config_settings,
+            },
+        )
 
     def _call_hook(self, hook_name: str, kwargs: Mapping[str, Any]) -> Any:
         extra_environ = {"_PYPROJECT_HOOKS_BUILD_BACKEND": self.build_backend}

@@ -74,6 +74,9 @@ def wrap_method(
     original_method: Callable[Concatenate[WT, P], Any],
 ) -> Callable[Concatenate[WT, P], Any]:
     def wrapper(self: WT, *args: P.args, **kwargs: P.kwargs) -> Any:
-        pass
+        result = original_method(self, *args, **kwargs)
+        if result is NotImplemented:
+            return result
+        return self._new(result)
 
     return wrapper

@@ -144,19 +144,25 @@ class Distribution(BaseDistribution):
 
     @property
     def location(self) -> str | None:
-        pass
+        if self._info_location is None:
+            return None
+        return str(self._info_location.parent)
 
     @property
     def info_location(self) -> str | None:
-        pass
+        if self._info_location is None:
+            return None
+        return str(self._info_location)
 
     @property
     def installed_location(self) -> str | None:
-        pass
+        if self._installed_location is None:
+            return None
+        return normalize_path(str(self._installed_location))
 
     @property
     def canonical_name(self) -> NormalizedName:
-        pass
+        return get_dist_canonical_name(self._dist)
 
     @property
     def version(self) -> Version:
@@ -171,7 +177,7 @@ class Distribution(BaseDistribution):
 
     @property
     def raw_version(self) -> str:
-        pass
+        return self._dist.version
 
     def is_file(self, path: InfoPath) -> bool:
         return self._dist.read_text(str(path)) is not None

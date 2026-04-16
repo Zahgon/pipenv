@@ -99,7 +99,20 @@ class PopenSpawn(SpawnBase):
 
     def _read_incoming(self):
         """Run in a thread to move output from a pipe to a queue."""
-        pass
+        fileno = self.proc.stdout.fileno()
+        while 1:
+            buf = b''
+            try:
+                buf = os.read(fileno, 1024)
+            except OSError as e:
+                self._log(e, 'read')
+
+            if not buf:
+                # This indicates we have reached EOF
+                self._read_queue.put(None)
+                return
+
+            self._read_queue.put(buf)
 
     def write(self, s):
         '''This is similar to send() except that there is no return value.
@@ -172,4 +185,4 @@ class PopenSpawn(SpawnBase):
 
     def sendeof(self):
         '''Closes the stdin pipe from the writing end.'''
-        pass
+        self.proc.stdin.close()

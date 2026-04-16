@@ -4,11 +4,11 @@ from .core import decode, encode
 
 
 def ToASCII(label: str) -> bytes:
-    pass
+    return encode(label)
 
 
 def ToUnicode(label: Union[bytes, bytearray]) -> str:
-    pass
+    return decode(label)
 
 
 def nameprep(s: Any) -> None:

@@ -92,7 +92,11 @@ class SpawnBase(object):
                 self.allowed_string_types = (bytes, str)
                 self.linesep = os.linesep.encode('ascii')
                 def write_to_stdout(b):
-                    pass
+                    try:
+                        return sys.stdout.buffer.write(b)
+                    except AttributeError:
+                        # If stdout has been replaced, it may not have .buffer
+                        return sys.stdout.write(b.decode('ascii', 'replace'))
                 self.write_to_stdout = write_to_stdout
             else:
                 self.allowed_string_types = (basestring,)  # analysis:ignore
@@ -153,10 +157,11 @@ class SpawnBase(object):
         return s
 
     def _get_buffer(self):
-        pass
+        return self._buffer.getvalue()
 
     def _set_buffer(self, value):
-        pass
+        self._buffer = self.buffer_type()
+        self._buffer.write(value)
 
     # This property is provided for backwards compatibility (self.buffer used
     # to be a string/bytes object)

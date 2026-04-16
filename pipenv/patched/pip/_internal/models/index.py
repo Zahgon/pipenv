@@ -19,7 +19,7 @@ class PackageIndex:
         self.file_storage_domain = file_storage_domain
 
     def _url_for_path(self, path: str) -> str:
-        pass
+        return urllib.parse.urljoin(self.url, path)
 
 
 PyPI = PackageIndex("https://pypi.org/", file_storage_domain="files.pythonhosted.org")

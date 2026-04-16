@@ -182,7 +182,9 @@ class Lexer(metaclass=LexerMeta):
         """
         Add a new stream filter to this lexer.
         """
-        pass
+        if not isinstance(filter_, Filter):
+            filter_ = get_filter_by_name(filter_, **options)
+        self.filters.append(filter_)
 
     def analyse_text(text):
         """
@@ -503,23 +505,101 @@ class RegexLexerMeta(LexerMeta):
 
     def _process_regex(cls, regex, rflags, state):
         """Preprocess the regular expression component of a token definition."""
-        pass
+        if isinstance(regex, Future):
+            regex = regex.get()
+        return re.compile(regex, rflags).match
 
     def _process_token(cls, token):
         """Preprocess the token component of a token definition."""
-        pass
+        assert type(token) is _TokenType or callable(token), \
+            f'token type must be simple type or callable, not {token!r}'
+        return token
 
     def _process_new_state(cls, new_state, unprocessed, processed):
         """Preprocess the state transition action of a token definition."""
-        pass
+        if isinstance(new_state, str):
+            # an existing state
+            if new_state == '#pop':
+                return -1
+            elif new_state in unprocessed:
+                return (new_state,)
+            elif new_state == '#push':
+                return new_state
+            elif new_state[:5] == '#pop:':
+                return -int(new_state[5:])
+            else:
+                assert False, f'unknown new state {new_state!r}'
+        elif isinstance(new_state, combined):
+            # combine a new state from existing ones
+            tmp_state = '_tmp_%d' % cls._tmpname
+            cls._tmpname += 1
+            itokens = []
+            for istate in new_state:
+                assert istate != new_state, f'circular state ref {istate!r}'
+                itokens.extend(cls._process_state(unprocessed,
+                                                  processed, istate))
+            processed[tmp_state] = itokens
+            return (tmp_state,)
+        elif isinstance(new_state, tuple):
+            # push more than one state
+            for istate in new_state:
+                assert (istate in unprocessed or
+                        istate in ('#pop', '#push')), \
+                    'unknown new state ' + istate
+            return new_state
+        else:
+            assert False, f'unknown new state def {new_state!r}'
 
     def _process_state(cls, unprocessed, processed, state):
         """Preprocess a single state definition."""
-        pass
+        assert isinstance(state, str), f"wrong state name {state!r}"
+        assert state[0] != '#', f"invalid state name {state!r}"
+        if state in processed:
+            return processed[state]
+        tokens = processed[state] = []
+        rflags = cls.flags
+        for tdef in unprocessed[state]:
+            if isinstance(tdef, include):
+                # it's a state reference
+                assert tdef != state, f"circular state reference {state!r}"
+                tokens.extend(cls._process_state(unprocessed, processed,
+                                                 str(tdef)))
+                continue
+            if isinstance(tdef, _inherit):
+                # should be processed already, but may not in the case of:
+                # 1. the state has no counterpart in any parent
+                # 2. the state includes more than one 'inherit'
+                continue
+            if isinstance(tdef, default):
+                new_state = cls._process_new_state(tdef.state, unprocessed, processed)
+                tokens.append((re.compile('').match, None, new_state))
+                continue
+
+            assert type(tdef) is tuple, f"wrong rule def {tdef!r}"
+
+            try:
+                rex = cls._process_regex(tdef[0], rflags, state)
+            except Exception as err:
+                raise ValueError(f"uncompilable regex {tdef[0]!r} in state {state!r} of {cls!r}: {err}") from err
+
+            token = cls._process_token(tdef[1])
+
+            if len(tdef) == 2:
+                new_state = None
+            else:
+                new_state = cls._process_new_state(tdef[2],
+                                                   unprocessed, processed)
+
+            tokens.append((rex, token, new_state))
+        return tokens
 
     def process_tokendef(cls, name, tokendefs=None):
         """Preprocess a dictionary of token definitions."""
-        pass
+        processed = cls._all_tokens[name] = {}
+        tokendefs = tokendefs or cls.tokens[name]
+        for state in list(tokendefs):
+            cls._process_state(tokendefs, processed, state)
+        return processed
 
     def get_tokendefs(cls):
         """
@@ -533,7 +613,42 @@ class RegexLexerMeta(LexerMeta):
         "inherit", which will cause the superclass' state definition to be
         included at that point in the state.
         """
-        pass
+        tokens = {}
+        inheritable = {}
+        for c in cls.__mro__:
+            toks = c.__dict__.get('tokens', {})
+
+            for state, items in toks.items():
+                curitems = tokens.get(state)
+                if curitems is None:
+                    # N.b. because this is assigned by reference, sufficiently
+                    # deep hierarchies are processed incrementally (e.g. for
+                    # A(B), B(C), C(RegexLexer), B will be premodified so X(B)
+                    # will not see any inherits in B).
+                    tokens[state] = items
+                    try:
+                        inherit_ndx = items.index(inherit)
+                    except ValueError:
+                        continue
+                    inheritable[state] = inherit_ndx
+                    continue
+
+                inherit_ndx = inheritable.pop(state, None)
+                if inherit_ndx is None:
+                    continue
+
+                # Replace the "inherit" value with the items
+                curitems[inherit_ndx:inherit_ndx+1] = items
+                try:
+                    # N.b. this is the index in items (that is, the superclass
+                    # copy), so offset required when storing below.
+                    new_inh_ndx = items.index(inherit)
+                except ValueError:
+                    pass
+                else:
+                    inheritable[state] = inherit_ndx + new_inh_ndx
+
+        return tokens
 
     def __call__(cls, *args, **kwds):
         """Instantiate cls after preprocessing its token definitions."""
@@ -801,7 +916,22 @@ class ProfilingRegexLexerMeta(RegexLexerMeta):
     """Metaclass for ProfilingRegexLexer, collects regex timing info."""
 
     def _process_regex(cls, regex, rflags, state):
-        pass
+        if isinstance(regex, words):
+            rex = regex_opt(regex.words, prefix=regex.prefix,
+                            suffix=regex.suffix)
+        else:
+            rex = regex
+        compiled = re.compile(rex, rflags)
+
+        def match_func(text, pos, endpos=sys.maxsize):
+            info = cls._prof_data[-1].setdefault((state, rex), [0, 0.0])
+            t0 = time.time()
+            res = compiled.match(text, pos, endpos)
+            t1 = time.time()
+            info[0] += 1
+            info[1] += t1 - t0
+            return res
+        return match_func
 
 
 class ProfilingRegexLexer(RegexLexer, metaclass=ProfilingRegexLexerMeta):

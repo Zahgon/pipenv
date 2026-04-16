@@ -51,7 +51,89 @@ class ListCommand(IndexGroupCommand):
       %prog [options]"""
 
     def add_options(self) -> None:
-        pass
+        self.cmd_opts.add_option(
+            "-o",
+            "--outdated",
+            action="store_true",
+            default=False,
+            help="List outdated packages",
+        )
+        self.cmd_opts.add_option(
+            "-u",
+            "--uptodate",
+            action="store_true",
+            default=False,
+            help="List uptodate packages",
+        )
+        self.cmd_opts.add_option(
+            "-e",
+            "--editable",
+            action="store_true",
+            default=False,
+            help="List editable projects.",
+        )
+        self.cmd_opts.add_option(
+            "-l",
+            "--local",
+            action="store_true",
+            default=False,
+            help=(
+                "If in a virtualenv that has global access, do not list "
+                "globally-installed packages."
+            ),
+        )
+        self.cmd_opts.add_option(
+            "--user",
+            dest="user",
+            action="store_true",
+            default=False,
+            help="Only output packages installed in user-site.",
+        )
+        self.cmd_opts.add_option(cmdoptions.list_path())
+
+        self.cmd_opts.add_option(
+            "--format",
+            action="store",
+            dest="list_format",
+            default="columns",
+            choices=("columns", "freeze", "json"),
+            help=(
+                "Select the output format among: columns (default), freeze, or json. "
+                "The 'freeze' format cannot be used with the --outdated option."
+            ),
+        )
+
+        self.cmd_opts.add_option(
+            "--not-required",
+            action="store_true",
+            dest="not_required",
+            help="List packages that are not dependencies of installed packages.",
+        )
+
+        self.cmd_opts.add_option(
+            "--exclude-editable",
+            action="store_false",
+            dest="include_editable",
+            help="Exclude editable package from output.",
+        )
+        self.cmd_opts.add_option(
+            "--include-editable",
+            action="store_true",
+            dest="include_editable",
+            help="Include editable package in output.",
+            default=True,
+        )
+        self.cmd_opts.add_option(cmdoptions.list_exclude())
+        index_opts = cmdoptions.make_option_group(cmdoptions.index_group, self.parser)
+
+        selection_opts = cmdoptions.make_option_group(
+            cmdoptions.package_selection_group,
+            self.parser,
+        )
+
+        self.parser.insert_option_group(0, index_opts)
+        self.parser.insert_option_group(0, selection_opts)
+        self.parser.insert_option_group(0, self.cmd_opts)
 
     def handle_pip_version_check(self, options: Values) -> None:
         if options.outdated or options.uptodate:
@@ -164,7 +246,29 @@ class ListCommand(IndexGroupCommand):
             def latest_info(
                 dist: _DistWithLatestInfo,
             ) -> _DistWithLatestInfo | None:
-                pass
+                all_candidates = finder.find_all_candidates(dist.canonical_name)
+                if self.should_exclude_prerelease(options, dist.canonical_name):
+                    all_candidates = [
+                        candidate
+                        for candidate in all_candidates
+                        if not candidate.version.is_prerelease
+                    ]
+
+                evaluator = finder.make_candidate_evaluator(
+                    project_name=dist.canonical_name,
+                )
+                best_candidate = evaluator.sort_best_candidate(all_candidates)
+                if best_candidate is None:
+                    return None
+
+                remote_version = best_candidate.version
+                if best_candidate.link.is_wheel:
+                    typ = "wheel"
+                else:
+                    typ = "sdist"
+                dist.latest_version = remote_version
+                dist.latest_filetype = typ
+                return dist
 
             for dist in map(latest_info, packages):
                 if dist is not None:

@@ -58,7 +58,20 @@ def format(tokens, formatter, outfile=None):  # pylint: disable=redefined-builti
     ``write`` method), the result will be written to it, otherwise it
     is returned as a string.
     """
-    pass
+    try:
+        if not outfile:
+            realoutfile = getattr(formatter, 'encoding', None) and BytesIO() or StringIO()
+            formatter.format(tokens, realoutfile)
+            return realoutfile.getvalue()
+        else:
+            formatter.format(tokens, outfile)
+    except TypeError:
+        # Heuristic to catch a common mistake.
+        from pipenv.patched.pip._vendor.pygments.formatter import Formatter
+        if isinstance(formatter, type) and issubclass(formatter, Formatter):
+            raise TypeError('format() argument must be a formatter instance, '
+                            'not a class')
+        raise
 
 
 def highlight(code, lexer, formatter, outfile=None):

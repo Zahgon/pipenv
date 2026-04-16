@@ -122,7 +122,7 @@ class DistPackage(Package):
 
     @property
     def provides_extras(self) -> frozenset[str]:
-        pass
+        return frozenset(self._obj.metadata.get_all("Provides-Extra") or ())
 
     def requires_for_extras(self, extras: frozenset[str]) -> Iterator[tuple[Requirement, str]]:
         """Yield (requirement, extra_name) for requirements gated behind the given extras."""
@@ -183,7 +183,10 @@ class DistPackage(Package):
 
     @property
     def edge_label(self) -> str:
-        pass
+        version = (self.req.version_spec if self.req is not None else None) or "any"
+        if self.req is not None and self.req.extra:
+            return f"[{self.req.extra}] {version}"
+        return version
 
     def as_dict(self) -> dict[str, str]:
         return {"key": self.key, "package_name": self.project_name, "installed_version": self.version}
@@ -222,15 +225,36 @@ class ReqPackage(Package):
 
     @property
     def version_spec(self) -> str | None:
-        pass
+        specs = sorted(map(str, self._obj.specifier), reverse=True)  # type: ignore[invalid-argument-type]  # `reverse` makes '>' prior to '<'
+        return ",".join(specs) if specs else None
 
     @property
     def edge_label(self) -> str:
-        pass
+        version = self.version_spec or "any"
+        if self.extra:
+            return f"[{self.extra}] {version}"
+        return version
 
     @property
     def installed_version(self) -> str:
-        pass
+        if not self.dist:
+            try:
+                return version(self.key)
+            except PackageNotFoundError:
+                pass
+            # Avoid AssertionError with setuptools, see https://github.com/tox-dev/pipdeptree/issues/162
+            if self.key == "setuptools":
+                return self.UNKNOWN_VERSION
+            try:
+                m = import_module(self.key)
+            except ImportError:
+                return self.UNKNOWN_VERSION
+            else:
+                v = getattr(m, "__version__", self.UNKNOWN_VERSION)
+                if ismodule(v):
+                    return getattr(v, "__version__", self.UNKNOWN_VERSION)
+                return v
+        return self.dist.version
 
     def is_conflicting(self) -> bool:
         """If installed version conflicts with required version."""
@@ -242,7 +266,7 @@ class ReqPackage(Package):
 
     @property
     def is_missing(self) -> bool:
-        pass
+        return self.installed_version == self.UNKNOWN_VERSION
 
     def as_dict(self) -> dict[str, str]:
         result = {

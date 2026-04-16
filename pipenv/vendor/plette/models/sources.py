@@ -26,20 +26,20 @@ class Source(DataModel):
 
     @property
     def url(self):
-        pass
+        return self._data["url"]
 
     @url.setter
     def url(self, value):
-        pass
+        self._data["url"] = value
 
     @property
     def verify_ssl(self):
-        pass
+        return self._data["verify_ssl"]
 
     @verify_ssl.setter
     def verify_ssl(self, value):
-        pass
+        self._data["verify_ssl"] = value
 
     @property
     def url_expanded(self):
-        pass
+        return os.path.expandvars(self._data["url"])

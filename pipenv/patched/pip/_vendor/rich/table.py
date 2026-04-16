@@ -121,12 +121,12 @@ class Column:
     @property
     def cells(self) -> Iterable["RenderableType"]:
         """Get all cells in the column, not including header."""
-        pass
+        yield from self._cells
 
     @property
     def flexible(self) -> bool:
         """Check if this column is flexible."""
-        pass
+        return self.ratio is not None
 
 
 @dataclass
@@ -296,12 +296,17 @@ class Table(JupyterMixin):
     @property
     def _extra_width(self) -> int:
         """Get extra width to add to cell content."""
-        pass
+        width = 0
+        if self.box and self.show_edge:
+            width += 2
+        if self.box:
+            width += len(self.columns) - 1
+        return width
 
     @property
     def row_count(self) -> int:
         """Get the current number of rows."""
-        pass
+        return len(self.rows)
 
     def get_row_style(self, console: "Console", index: int) -> StyleType:
         """Get the current row style."""
@@ -349,12 +354,13 @@ class Table(JupyterMixin):
     @property
     def padding(self) -> Tuple[int, int, int, int]:
         """Get cell padding."""
-        pass
+        return self._padding
 
     @padding.setter
     def padding(self, padding: PaddingDimensions) -> "Table":
         """Set cell padding."""
-        pass
+        self._padding = Padding.unpack(padding)
+        return self
 
     def add_column(
         self,
@@ -959,7 +965,9 @@ if __name__ == "__main__":  # pragma: no cover
         )
 
         def header(text: str) -> None:
-            pass
+            console.print()
+            console.rule(highlight(text))
+            console.print()
 
         console = Console()
         highlight = ReprHighlighter()

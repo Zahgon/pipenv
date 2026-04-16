@@ -33,7 +33,11 @@ class Tag(NamedTuple):
     @property
     def markup(self) -> str:
         """Get the string representation of this tag."""
-        pass
+        return (
+            f"[{self.name}]"
+            if self.parameters is None
+            else f"[{self.name}={self.parameters}]"
+        )
 
 
 _ReStringMatch = Match[str]  # regex match object
@@ -56,7 +60,8 @@ def escape(
 
     def escape_backslashes(match: Match[str]) -> str:
         """Called by re.sub replace matches."""
-        pass
+        backslashes, text = match.groups()
+        return f"{backslashes}{backslashes}\\{text}"
 
     markup = _escape(escape_backslashes, markup)
     if markup.endswith("\\") and not markup.endswith("\\\\"):

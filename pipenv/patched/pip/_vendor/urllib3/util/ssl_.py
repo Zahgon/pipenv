@@ -37,7 +37,10 @@ def _const_compare_digest_backport(a, b):
     The digests must be of type str/bytes.
     Returns True if the digests match, and False otherwise.
     """
-    pass
+    result = abs(len(a) - len(b))
+    for left, right in zip(bytearray(a), bytearray(b)):
+        result |= left ^ right
+    return result == 0
 
 
 _const_compare_digest = getattr(hmac, "compare_digest", _const_compare_digest_backport)

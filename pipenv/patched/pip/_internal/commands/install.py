@@ -84,7 +84,199 @@ class InstallCommand(RequirementCommand):
       %prog [options] <archive url/path> ..."""
 
     def add_options(self) -> None:
-        pass
+        self.cmd_opts.add_option(cmdoptions.requirements())
+        self.cmd_opts.add_option(cmdoptions.constraints())
+        self.cmd_opts.add_option(cmdoptions.build_constraints())
+        self.cmd_opts.add_option(cmdoptions.requirements_from_scripts())
+        self.cmd_opts.add_option(cmdoptions.no_deps())
+
+        self.cmd_opts.add_option(cmdoptions.editable())
+        self.cmd_opts.add_option(
+            "--dry-run",
+            action="store_true",
+            dest="dry_run",
+            default=False,
+            help=(
+                "Don't actually install anything, just print what would be. "
+                "Can be used in combination with --ignore-installed "
+                "to 'resolve' the requirements."
+            ),
+        )
+        self.cmd_opts.add_option(
+            "-t",
+            "--target",
+            dest="target_dir",
+            metavar="dir",
+            default=None,
+            help=(
+                "Install packages into <dir>. "
+                "By default this will not replace existing files/folders in "
+                "<dir>. Use --upgrade to replace existing packages in <dir> "
+                "with new versions."
+            ),
+        )
+        cmdoptions.add_target_python_options(self.cmd_opts)
+
+        self.cmd_opts.add_option(
+            "--user",
+            dest="use_user_site",
+            action="store_true",
+            help=(
+                "Install to the Python user install directory for your "
+                "platform. Typically ~/.local/, or %APPDATA%\\Python on "
+                "Windows. (See the Python documentation for site.USER_BASE "
+                "for full details.)"
+            ),
+        )
+        self.cmd_opts.add_option(
+            "--no-user",
+            dest="use_user_site",
+            action="store_false",
+            help=SUPPRESS_HELP,
+        )
+        self.cmd_opts.add_option(
+            "--root",
+            dest="root_path",
+            metavar="dir",
+            default=None,
+            help="Install everything relative to this alternate root directory.",
+        )
+        self.cmd_opts.add_option(
+            "--prefix",
+            dest="prefix_path",
+            metavar="dir",
+            default=None,
+            help=(
+                "Installation prefix where lib, bin and other top-level "
+                "folders are placed. Note that the resulting installation may "
+                "contain scripts and other resources which reference the "
+                "Python interpreter of pip, and not that of ``--prefix``. "
+                "See also the ``--python`` option if the intention is to "
+                "install packages into another (possibly pip-free) "
+                "environment."
+            ),
+        )
+
+        self.cmd_opts.add_option(cmdoptions.src())
+
+        self.cmd_opts.add_option(
+            "-U",
+            "--upgrade",
+            dest="upgrade",
+            action="store_true",
+            help=(
+                "Upgrade all specified packages to the newest available "
+                "version. The handling of dependencies depends on the "
+                "upgrade-strategy used."
+            ),
+        )
+
+        self.cmd_opts.add_option(
+            "--upgrade-strategy",
+            dest="upgrade_strategy",
+            default="only-if-needed",
+            choices=["only-if-needed", "eager"],
+            help=(
+                "Determines how dependency upgrading should be handled "
+                "[default: %default]. "
+                '"eager" - dependencies are upgraded regardless of '
+                "whether the currently installed version satisfies the "
+                "requirements of the upgraded package(s). "
+                '"only-if-needed" -  are upgraded only when they do not '
+                "satisfy the requirements of the upgraded package(s)."
+            ),
+        )
+
+        self.cmd_opts.add_option(
+            "--force-reinstall",
+            dest="force_reinstall",
+            action="store_true",
+            help="Reinstall all packages even if they are already up-to-date.",
+        )
+
+        self.cmd_opts.add_option(
+            "-I",
+            "--ignore-installed",
+            dest="ignore_installed",
+            action="store_true",
+            help=(
+                "Ignore the installed packages, overwriting them. "
+                "This can break your system if the existing package "
+                "is of a different version or was installed "
+                "with a different package manager!"
+            ),
+        )
+
+        self.cmd_opts.add_option(cmdoptions.ignore_requires_python())
+        self.cmd_opts.add_option(cmdoptions.no_build_isolation())
+        self.cmd_opts.add_option(cmdoptions.use_pep517())
+        self.cmd_opts.add_option(cmdoptions.check_build_deps())
+        self.cmd_opts.add_option(cmdoptions.override_externally_managed())
+
+        self.cmd_opts.add_option(cmdoptions.config_settings())
+
+        self.cmd_opts.add_option(
+            "--compile",
+            action="store_true",
+            dest="compile",
+            default=True,
+            help="Compile Python source files to bytecode",
+        )
+
+        self.cmd_opts.add_option(
+            "--no-compile",
+            action="store_false",
+            dest="compile",
+            help="Do not compile Python source files to bytecode",
+        )
+
+        self.cmd_opts.add_option(
+            "--no-warn-script-location",
+            action="store_false",
+            dest="warn_script_location",
+            default=True,
+            help="Do not warn when installing scripts outside PATH",
+        )
+        self.cmd_opts.add_option(
+            "--no-warn-conflicts",
+            action="store_false",
+            dest="warn_about_conflicts",
+            default=True,
+            help="Do not warn about broken dependencies",
+        )
+        self.cmd_opts.add_option(cmdoptions.require_hashes())
+        self.cmd_opts.add_option(cmdoptions.progress_bar())
+        self.cmd_opts.add_option(cmdoptions.root_user_action())
+
+        index_opts = cmdoptions.make_option_group(
+            cmdoptions.index_group,
+            self.parser,
+        )
+
+        selection_opts = cmdoptions.make_option_group(
+            cmdoptions.package_selection_group,
+            self.parser,
+        )
+
+        self.parser.insert_option_group(0, index_opts)
+        self.parser.insert_option_group(0, selection_opts)
+        self.parser.insert_option_group(0, self.cmd_opts)
+
+        self.cmd_opts.add_option(
+            "--report",
+            dest="json_report_file",
+            metavar="file",
+            default=None,
+            help=(
+                "Generate a JSON file describing what pip did to install "
+                "the provided requirements. "
+                "Can be used in combination with --dry-run and --ignore-installed "
+                "to 'resolve' the requirements. "
+                "When - is used as file name it writes to stdout. "
+                "When writing to stdout, please combine with the --quiet option "
+                "to avoid mixing pip logging output with JSON output."
+            ),
+        )
 
     @with_cleanup
     def run(self, options: Values, args: list[str]) -> int:

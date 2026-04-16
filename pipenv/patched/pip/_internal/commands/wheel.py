@@ -40,7 +40,55 @@ class WheelCommand(RequirementCommand):
       %prog [options] <archive url/path> ..."""
 
     def add_options(self) -> None:
-        pass
+        self.cmd_opts.add_option(
+            "-w",
+            "--wheel-dir",
+            dest="wheel_dir",
+            metavar="dir",
+            default=os.curdir,
+            help=(
+                "Build wheels into <dir>, where the default is the "
+                "current working directory."
+            ),
+        )
+        self.cmd_opts.add_option(cmdoptions.no_build_isolation())
+        self.cmd_opts.add_option(cmdoptions.use_pep517())
+        self.cmd_opts.add_option(cmdoptions.check_build_deps())
+        self.cmd_opts.add_option(cmdoptions.constraints())
+        self.cmd_opts.add_option(cmdoptions.build_constraints())
+        self.cmd_opts.add_option(cmdoptions.editable())
+        self.cmd_opts.add_option(cmdoptions.requirements())
+        self.cmd_opts.add_option(cmdoptions.requirements_from_scripts())
+        self.cmd_opts.add_option(cmdoptions.src())
+        self.cmd_opts.add_option(cmdoptions.ignore_requires_python())
+        self.cmd_opts.add_option(cmdoptions.no_deps())
+        self.cmd_opts.add_option(cmdoptions.progress_bar())
+
+        self.cmd_opts.add_option(
+            "--no-verify",
+            dest="no_verify",
+            action="store_true",
+            default=False,
+            help="Don't verify if built wheel is valid.",
+        )
+
+        self.cmd_opts.add_option(cmdoptions.config_settings())
+
+        self.cmd_opts.add_option(cmdoptions.require_hashes())
+
+        index_opts = cmdoptions.make_option_group(
+            cmdoptions.index_group,
+            self.parser,
+        )
+
+        selection_opts = cmdoptions.make_option_group(
+            cmdoptions.package_selection_group,
+            self.parser,
+        )
+
+        self.parser.insert_option_group(0, index_opts)
+        self.parser.insert_option_group(0, selection_opts)
+        self.parser.insert_option_group(0, self.cmd_opts)
 
     @with_cleanup
     def run(self, options: Values, args: list[str]) -> int:

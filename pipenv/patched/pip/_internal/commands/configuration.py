@@ -58,7 +58,42 @@ class ConfigurationCommand(Command):
     """
 
     def add_options(self) -> None:
-        pass
+        self.cmd_opts.add_option(
+            "--editor",
+            dest="editor",
+            action="store",
+            default=None,
+            help=(
+                "Editor to use to edit the file. Uses VISUAL or EDITOR "
+                "environment variables if not provided."
+            ),
+        )
+
+        self.cmd_opts.add_option(
+            "--global",
+            dest="global_file",
+            action="store_true",
+            default=False,
+            help="Use the system-wide configuration file only",
+        )
+
+        self.cmd_opts.add_option(
+            "--user",
+            dest="user_file",
+            action="store_true",
+            default=False,
+            help="Use the user configuration file only",
+        )
+
+        self.cmd_opts.add_option(
+            "--site",
+            dest="site_file",
+            action="store_true",
+            default=False,
+            help="Use the current environment configuration file only",
+        )
+
+        self.parser.insert_option_group(0, self.cmd_opts)
 
     def handler_map(self) -> dict[str, Callable[[Values, list[str]], None]]:
         return {
@@ -139,40 +174,115 @@ class ConfigurationCommand(Command):
         )
 
     def list_values(self, options: Values, args: list[str]) -> None:
-        pass
+        self._get_n_args(args, "list", n=0)
+
+        for key, value in sorted(self.configuration.items()):
+            for key, value in sorted(value.items()):
+                write_output("%s=%r", key, value)
 
     def get_name(self, options: Values, args: list[str]) -> None:
-        pass
+        key = self._get_n_args(args, "get [name]", n=1)
+        value = self.configuration.get_value(key)
+
+        write_output("%s", value)
 
     def set_name_value(self, options: Values, args: list[str]) -> None:
-        pass
+        key, value = self._get_n_args(args, "set [name] [value]", n=2)
+        self.configuration.set_value(key, value)
+
+        self._save_configuration()
 
     def unset_name(self, options: Values, args: list[str]) -> None:
-        pass
+        key = self._get_n_args(args, "unset [name]", n=1)
+        self.configuration.unset_value(key)
+
+        self._save_configuration()
 
     def list_config_values(self, options: Values, args: list[str]) -> None:
         """List config key-value pairs across different config files"""
-        pass
+        self._get_n_args(args, "debug", n=0)
+
+        self.print_env_var_values()
+        # Iterate over config files and print if they exist, and the
+        # key-value pairs present in them if they do
+        for variant, files in sorted(self.configuration.iter_config_files()):
+            write_output("%s:", variant)
+            for fname in files:
+                with indent_log():
+                    file_exists = os.path.exists(fname)
+                    write_output("%s, exists: %r", fname, file_exists)
+                    if file_exists:
+                        self.print_config_file_values(variant, fname)
 
     def print_config_file_values(self, variant: Kind, fname: str) -> None:
         """Get key-value pairs from the file of a variant"""
-        pass
+        for name, value in self.configuration.get_values_in_config(variant).items():
+            with indent_log():
+                if name == fname:
+                    for confname, confvalue in value.items():
+                        write_output("%s: %s", confname, confvalue)
 
     def print_env_var_values(self) -> None:
         """Get key-values pairs present as environment variables"""
-        pass
+        write_output("%s:", "env_var")
+        with indent_log():
+            for key, value in sorted(self.configuration.get_environ_vars()):
+                env_var = f"PIP_{key.upper()}"
+                write_output("%s=%r", env_var, value)
 
     def open_in_editor(self, options: Values, args: list[str]) -> None:
-        pass
+        editor = self._determine_editor(options)
+
+        fname = self.configuration.get_file_to_edit()
+        if fname is None:
+            raise PipError("Could not determine appropriate file.")
+        elif '"' in fname:
+            # This shouldn't happen, unless we see a username like that.
+            # If that happens, we'd appreciate a pull request fixing this.
+            raise PipError(
+                f'Can not open an editor for a file name containing "\n{fname}'
+            )
+
+        try:
+            subprocess.check_call(f'{editor} "{fname}"', shell=True)
+        except FileNotFoundError as e:
+            if not e.filename:
+                e.filename = editor
+            raise
+        except subprocess.CalledProcessError as e:
+            raise PipError(f"Editor Subprocess exited with exit code {e.returncode}")
 
     def _get_n_args(self, args: list[str], example: str, n: int) -> Any:
         """Helper to make sure the command got the right number of arguments"""
-        pass
+        if len(args) != n:
+            msg = (
+                f"Got unexpected number of arguments, expected {n}. "
+                f'(example: "{get_prog()} config {example}")'
+            )
+            raise PipError(msg)
+
+        if n == 1:
+            return args[0]
+        else:
+            return args
 
     def _save_configuration(self) -> None:
         # We successfully ran a modifying command. Need to save the
         # configuration.
-        pass
+        try:
+            self.configuration.save()
+        except Exception:
+            logger.exception(
+                "Unable to save configuration. Please report this as a bug."
+            )
+            raise PipError("Internal Error.")
 
     def _determine_editor(self, options: Values) -> str:
-        pass
+        if options.editor is not None:
+            return options.editor
+        elif "VISUAL" in os.environ:
+            return os.environ["VISUAL"]
+        elif "EDITOR" in os.environ:
+            return os.environ["EDITOR"]
+        else:
+            raise PipError("Could not determine editor to use.")

@@ -26,7 +26,24 @@ class InspectCommand(Command):
       %prog [options]"""
 
     def add_options(self) -> None:
-        pass
+        self.cmd_opts.add_option(
+            "--local",
+            action="store_true",
+            default=False,
+            help=(
+                "If in a virtualenv that has global access, do not list "
+                "globally-installed packages."
+            ),
+        )
+        self.cmd_opts.add_option(
+            "--user",
+            dest="user",
+            action="store_true",
+            default=False,
+            help="Only output packages installed in user-site.",
+        )
+        self.cmd_opts.add_option(cmdoptions.list_path())
+        self.parser.insert_option_group(0, self.cmd_opts)
 
     def run(self, options: Values, args: list[str]) -> int:
         cmdoptions.check_list_path_option(options)

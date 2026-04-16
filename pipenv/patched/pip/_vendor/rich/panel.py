@@ -108,11 +108,35 @@ class Panel(JupyterMixin):
 
     @property
     def _title(self) -> Optional[Text]:
-        pass
+        if self.title:
+            title_text = (
+                Text.from_markup(self.title)
+                if isinstance(self.title, str)
+                else self.title.copy()
+            )
+            title_text.end = ""
+            title_text.plain = title_text.plain.replace("\n", " ")
+            title_text.no_wrap = True
+            title_text.expand_tabs()
+            title_text.pad(1)
+            return title_text
+        return None
 
     @property
     def _subtitle(self) -> Optional[Text]:
-        pass
+        if self.subtitle:
+            subtitle_text = (
+                Text.from_markup(self.subtitle)
+                if isinstance(self.subtitle, str)
+                else self.subtitle.copy()
+            )
+            subtitle_text.end = ""
+            subtitle_text.plain = subtitle_text.plain.replace("\n", " ")
+            subtitle_text.no_wrap = True
+            subtitle_text.expand_tabs()
+            subtitle_text.pad(1)
+            return subtitle_text
+        return None
 
     def __rich_console__(
         self, console: "Console", options: "ConsoleOptions"

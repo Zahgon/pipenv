@@ -154,10 +154,10 @@ class StyleMeta(type):
         }
 
     def list_styles(cls):
-        pass
+        return list(cls)
 
     def styles_token(cls, ttype):
-        pass
+        return ttype in cls._styles
 
     def __iter__(cls):
         for token in cls._styles:

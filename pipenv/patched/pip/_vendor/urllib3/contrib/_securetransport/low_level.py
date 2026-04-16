@@ -38,7 +38,22 @@ def _cf_dictionary_from_tuples(tuples):
     """
     Given a list of Python tuples, create an associated CFDictionary.
     """
-    pass
+    dictionary_size = len(tuples)
+
+    # We need to get the dictionary keys and values out in the same order.
+    keys = (t[0] for t in tuples)
+    values = (t[1] for t in tuples)
+    cf_keys = (CoreFoundation.CFTypeRef * dictionary_size)(*keys)
+    cf_values = (CoreFoundation.CFTypeRef * dictionary_size)(*values)
+
+    return CoreFoundation.CFDictionaryCreate(
+        CoreFoundation.kCFAllocatorDefault,
+        cf_keys,
+        cf_values,
+        dictionary_size,
+        CoreFoundation.kCFTypeDictionaryKeyCallBacks,
+        CoreFoundation.kCFTypeDictionaryValueCallBacks,
+    )
 
 
 def _cfstr(py_bstr):

@@ -319,7 +319,9 @@ class HTTPHeaderDict(MutableMapping):
 
     def itermerged(self):
         """Iterate over all headers, merging duplicate ones together."""
-        pass
+        for key in self:
+            val = self._container[key.lower()]
+            yield val[0], ", ".join(val[1:])
 
     def items(self):
         return list(self.iteritems())

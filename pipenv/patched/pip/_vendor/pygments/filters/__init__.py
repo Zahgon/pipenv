@@ -44,12 +44,22 @@ def get_filter_by_name(filtername, **options):
 
 def get_all_filters():
     """Return a generator of all filter names."""
-    pass
+    yield from FILTERS
+    for name, _ in find_plugin_filters():
+        yield name
 
 
 def _replace_special(ttype, value, regex, specialttype,
                      replacefunc=lambda x: x):
-    pass
+    last = 0
+    for match in regex.finditer(value):
+        start, end = match.start(), match.end()
+        if start != last:
+            yield ttype, value[last:start]
+        yield specialttype, replacefunc(value[start:end])
+        last = end
+    if last != len(value):
+        yield ttype, value[last:]
 
 
 class CodeTagFilter(Filter):
@@ -74,7 +84,14 @@ class CodeTagFilter(Filter):
         ])))
 
     def filter(self, lexer, stream):
-        pass
+        regex = self.tag_re
+        for ttype, value in stream:
+            if ttype in String.Doc or \
+               ttype in Comment and \
+               ttype not in Comment.Preproc:
+                yield from _replace_special(ttype, value, regex, Comment.Special)
+            else:
+                yield ttype, value
 
 
 class SymbolFilter(Filter):
@@ -660,7 +677,11 @@ class SymbolFilter(Filter):
         self.symbols = self.lang_map[lang]
 
     def filter(self, lexer, stream):
-        pass
+        for ttype, value in stream:
+            if value in self.symbols:
+                yield ttype, self.symbols[value]
+            else:
+                yield ttype, value
 
 
 class KeywordCaseFilter(Filter):
@@ -684,7 +705,11 @@ class KeywordCaseFilter(Filter):
         self.convert = getattr(str, case)
 
     def filter(self, lexer, stream):
-        pass
+        for ttype, value in stream:
+            if ttype in Keyword:
+                yield ttype, self.convert(value)
+            else:
+                yield ttype, value
 
 
 class NameHighlightFilter(Filter):
@@ -721,7 +746,11 @@ class NameHighlightFilter(Filter):
             self.tokentype = Name.Function
 
     def filter(self, lexer, stream):
-        pass
+        for ttype, value in stream:
+            if ttype in Name and value in self.names:
+                yield self.tokentype, value
+            else:
+                yield ttype, value
 
 
 class ErrorToken(Exception):
@@ -751,7 +780,10 @@ class RaiseOnErrorTokenFilter(Filter):
             raise OptionError('excclass option is not an exception class')
 
     def filter(self, lexer, stream):
-        pass
+        for ttype, value in stream:
+            if ttype is Error:
+                raise self.exception(value)
+            yield ttype, value
 
 
 class VisibleWhitespaceFilter(Filter):
@@ -802,7 +834,35 @@ class VisibleWhitespaceFilter(Filter):
         self.wstt = get_bool_opt(options, 'wstokentype', True)
 
     def filter(self, lexer, stream):
-        pass
+        if self.wstt:
+            spaces = self.spaces or ' '
+            tabs = self.tabs or '\t'
+            newlines = self.newlines or '\n'
+            regex = re.compile(r'\s')
+
+            def replacefunc(wschar):
+                if wschar == ' ':
+                    return spaces
+                elif wschar == '\t':
+                    return tabs
+                elif wschar == '\n':
+                    return newlines
+                return wschar
+
+            for ttype, value in stream:
+                yield from _replace_special(ttype, value, regex, Whitespace,
+                                            replacefunc)
+        else:
+            spaces, tabs, newlines = self.spaces, self.tabs, self.newlines
+            # simpler processing
+            for ttype, value in stream:
+                if spaces:
+                    value = value.replace(' ', spaces)
+                if tabs:
+                    value = value.replace('\t', tabs)
+                if newlines:
+                    value = value.replace('\n', newlines)
+                yield ttype, value
 
 
 class GobbleFilter(Filter):
@@ -824,10 +884,24 @@ class GobbleFilter(Filter):
         self.n = get_int_opt(options, 'n', 0)
 
     def gobble(self, value, left):
-        pass
+        if left < len(value):
+            return value[left:], 0
+        else:
+            return '', left - len(value)
 
     def filter(self, lexer, stream):
-        pass
+        n = self.n
+        left = n  # How many characters left to gobble.
+        for ttype, value in stream:
+            # Remove ``left`` tokens from first line, ``n`` from all others.
+            parts = value.split('\n')
+            (parts[0], left) = self.gobble(parts[0], left)
+            for i in range(1, len(parts)):
+                (parts[i], left) = self.gobble(parts[i], n)
+            value = '\n'.join(parts)
+
+            if value != '':
+                yield ttype, value
 
 
 class TokenMergeFilter(Filter):
@@ -840,7 +914,18 @@ class TokenMergeFilter(Filter):
         Filter.__init__(self, **options)
 
     def filter(self, lexer, stream):
-        pass
+        current_type = None
+        current_value = None
+        for ttype, value in stream:
+            if ttype is current_type:
+                current_value += value
+            else:
+                if current_type is not None:
+                    yield current_type, current_value
+                current_type = ttype
+                current_value = value
+        if current_type is not None:
+            yield current_type, current_value
 
 
 FILTERS = {

@@ -38,10 +38,10 @@ PY3 = sys.version_info[0] >= 3
 
 if PY3:
     def _byte(i):
-        pass
+        return bytes([i])
 else:
     def _byte(i):
-        pass
+        return chr(i)
     
     class FileNotFoundError(OSError): pass
     class TimeoutError(OSError): pass
@@ -53,7 +53,40 @@ def _make_eof_intr():
     
     This avoids doing potentially costly operations on module load.
     """
-    pass
+    global _EOF, _INTR
+    if (_EOF is not None) and (_INTR is not None):
+        return
+
+    # inherit EOF and INTR definitions from controlling process.
+    try:
+        from termios import VEOF, VINTR
+        fd = None
+        for name in 'stdin', 'stdout':
+            stream = getattr(sys, '__%s__' % name, None)
+            if stream is None or not hasattr(stream, 'fileno'):
+                continue
+            try:
+                fd = stream.fileno()
+            except ValueError:
+                continue
+        if fd is None:
+            # no fd, raise ValueError to fallback on CEOF, CINTR
+            raise ValueError("No stream has a fileno")
+        intr = ord(termios.tcgetattr(fd)[6][VINTR])
+        eof = ord(termios.tcgetattr(fd)[6][VEOF])
+    except (ImportError, OSError, IOError, ValueError, termios.error):
+        # unless the controlling process is also not a terminal,
+        # such as cron(1), or when stdin and stdout are both closed.
+        # Fall-back to using CEOF and CINTR. There
+        try:
+            from termios import CEOF, CINTR
+            (intr, eof) = (CINTR, CEOF)
+        except ImportError:
+            #                         ^C, ^D
+            (intr, eof) = (3, 4)
+    
+    _INTR = _byte(intr)
+    _EOF = _byte(eof)
 
 # setecho and setwinsize are pulled out here because on some platforms, we need
 # to do this from the child before we exec()
@@ -104,7 +137,11 @@ class PtyProcess(object):
 
         @staticmethod
         def write_to_stdout(b):
-            pass
+            try:
+                return sys.stdout.buffer.write(b)
+            except AttributeError:
+                # If stdout has been replaced, it may not have .buffer
+                return sys.stdout.write(b.decode('ascii', 'replace'))
     else:
         linesep = os.linesep
         crlf = '\r\n'
@@ -328,7 +365,7 @@ class PtyProcess(object):
 
     @staticmethod
     def _coerce_read_string(s):
-        pass
+        return s
 
     def __del__(self):
         '''This makes sure that no system resources are left open. Python only
@@ -403,7 +440,17 @@ class PtyProcess(object):
 
         If timeout==None then this method to block until ECHO flag is False.
         '''
-        pass
+
+        if timeout is not None:
+            end_time = time.time() + timeout
+        while True:
+            if not self.getecho():
+                return True
+            if timeout < 0 and timeout is not None:
+                return False
+            if timeout is not None:
+                timeout = end_time - time.time()
+            time.sleep(0.1)
 
     def getecho(self):
         '''This returns the terminal echo mode. This returns True if echo is
@@ -411,7 +458,17 @@ class PtyProcess(object):
         to enter a password often set ECHO False. See waitnoecho().
 
         Not supported on platforms where ``isatty()`` returns False.  '''
-        pass
+
+        try:
+            attr = termios.tcgetattr(self.fd)
+        except termios.error as err:
+            errmsg = 'getecho() may not be called on this platform'
+            if err.args[0] == errno.EINVAL:
+                raise IOError(err.args[0], '%s: %s.' % (err.args[1], errmsg))
+            raise
+
+        self.echo = bool(attr[3] & termios.ECHO)
+        return self.echo
 
     def setecho(self, state):
         '''This sets the terminal echo mode on or off. Note that anything the
@@ -445,7 +502,9 @@ class PtyProcess(object):
 
         Not supported on platforms where ``isatty()`` returns False.
         '''
-        pass
+        _setecho(self.fd, state)
+
+        self.echo = state
 
     def read(self, size=1024):
         """Read and return at most ``size`` bytes from the pty.
@@ -517,7 +576,24 @@ class PtyProcess(object):
 
         See also, sendintr() and sendeof().
         '''
-        pass
+        char = char.lower()
+        a = ord(char)
+        if 97 <= a <= 122:
+            a = a - ord('a') + 1
+            byte = _byte(a)
+            return self._writeb(byte), byte
+        d = {'@': 0, '`': 0,
+            '[': 27, '{': 27,
+            '\\': 28, '|': 28,
+            ']': 29, '}': 29,
+            '^': 30, '~': 30,
+            '_': 31,
+            '?': 127}
+        if char not in d:
+            return 0, b''
+
+        byte = _byte(d[char])
+        return self._writeb(byte), byte
 
     def sendeof(self):
         '''This sends an EOF to the child. This sends a character which causes
@@ -528,12 +604,14 @@ class PtyProcess(object):
         called at the beginning of a line. This method does not send a newline.
         It is the responsibility of the caller to ensure the eof is sent at the
         beginning of a line. '''
-        pass
+
+        return self._writeb(_EOF), _EOF
 
     def sendintr(self):
         '''This sends a SIGINT to the child. It does not require
         the SIGINT to be the first character on a line. '''
-        pass
+
+        return self._writeb(_INTR), _INTR
 
     def eof(self):
         '''This returns True if the EOF exception was ever raised.
@@ -702,7 +780,10 @@ class PtyProcess(object):
     def getwinsize(self):
         """Return the window size of the pseudoterminal as a tuple (rows, cols).
         """
-        pass
+        TIOCGWINSZ = getattr(termios, 'TIOCGWINSZ', 1074295912)
+        s = struct.pack('HHHH', 0, 0, 0, 0)
+        x = fcntl.ioctl(self.fd, TIOCGWINSZ, s)
+        return struct.unpack('HHHH', x)[0:2]
 
     def setwinsize(self, rows, cols):
         """Set the terminal window size of the child tty.

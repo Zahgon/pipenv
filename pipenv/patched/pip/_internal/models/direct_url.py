@@ -109,11 +109,25 @@ class ArchiveInfo:
 
     @property
     def hash(self) -> str | None:
-        pass
+        return self._hash
 
     @hash.setter
     def hash(self, value: str | None) -> None:
-        pass
+        if value is not None:
+            # Auto-populate the hashes key to upgrade to the new format automatically.
+            # We don't back-populate the legacy hash key from hashes.
+            try:
+                hash_name, hash_value = value.split("=", 1)
+            except ValueError:
+                raise DirectUrlValidationError(
+                    f"invalid archive_info.hash format: {value!r}"
+                )
+            if self.hashes is None:
+                self.hashes = {hash_name: hash_value}
+            elif hash_name not in self.hashes:
+                self.hashes = self.hashes.copy()
+                self.hashes[hash_name] = hash_value
+        self._hash = value
 
     @classmethod
     def _from_dict(cls, d: dict[str, Any] | None) -> ArchiveInfo | None:
@@ -151,7 +165,18 @@ class DirectUrl:
     subdirectory: str | None = None
 
     def _remove_auth_from_netloc(self, netloc: str) -> str:
-        pass
+        if "@" not in netloc:
+            return netloc
+        user_pass, netloc_no_user_pass = netloc.split("@", 1)
+        if (
+            isinstance(self.info, VcsInfo)
+            and self.info.vcs == "git"
+            and user_pass == "git"
+        ):
+            return netloc
+        if ENV_VAR_RE.match(user_pass):
+            return netloc
+        return netloc_no_user_pass
 
     @property
     def redacted_url(self) -> str:
@@ -159,7 +184,12 @@ class DirectUrl:
         environment variables as specified in PEP 610, or it is ``git``
         in the case of a git URL.
         """
-        pass
+        purl = urllib.parse.urlsplit(self.url)
+        netloc = self._remove_auth_from_netloc(purl.netloc)
+        surl = urllib.parse.urlunsplit(
+            (purl.scheme, netloc, purl.path, purl.query, purl.fragment)
+        )
+        return surl
 
     def validate(self) -> None:
         self.from_dict(self.to_dict())
@@ -194,4 +224,4 @@ class DirectUrl:
         return json.dumps(self.to_dict(), sort_keys=True)
 
     def is_local_editable(self) -> bool:
-        pass
+        return isinstance(self.info, DirInfo) and self.info.editable

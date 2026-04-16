@@ -220,12 +220,12 @@ class Finder:
         if self.sort_by_path:
 
             def sort_key(x):
-                pass
+                return x.path, x.version_sort
 
         else:
 
             def sort_key(x):
-                pass
+                return x.version_sort
 
         for version in sorted(
             python_versions, key=sort_key, reverse=not self.sort_by_path

@@ -38,7 +38,24 @@ class IndexCommand(IndexGroupCommand):
     """
 
     def add_options(self) -> None:
-        pass
+        cmdoptions.add_target_python_options(self.cmd_opts)
+
+        self.cmd_opts.add_option(cmdoptions.ignore_requires_python())
+        self.cmd_opts.add_option(cmdoptions.json())
+
+        index_opts = cmdoptions.make_option_group(
+            cmdoptions.index_group,
+            self.parser,
+        )
+
+        selection_opts = cmdoptions.make_option_group(
+            cmdoptions.package_selection_group,
+            self.parser,
+        )
+
+        self.parser.insert_option_group(0, index_opts)
+        self.parser.insert_option_group(0, selection_opts)
+        self.parser.insert_option_group(0, self.cmd_opts)
 
     def handler_map(self) -> dict[str, Callable[[Values, list[str]], None]]:
         return {
@@ -97,4 +114,53 @@ class IndexCommand(IndexGroupCommand):
         )
 
     def get_available_package_versions(self, options: Values, args: list[Any]) -> None:
-        pass
+        if len(args) != 1:
+            raise CommandError("You need to specify exactly one argument")
+
+        target_python = cmdoptions.make_target_python(options)
+        query = args[0]
+
+        with self._build_session(options) as session:
+            finder = self._build_package_finder(
+                options=options,
+                session=session,
+                target_python=target_python,
+                ignore_requires_python=options.ignore_requires_python,
+            )
+
+            versions: Iterable[Version] = (
+                candidate.version for candidate in finder.find_all_candidates(query)
+            )
+
+            if self.should_exclude_prerelease(options, canonicalize_name(query)):
+                versions = (
+                    version for version in versions if not version.is_prerelease
+                )
+            versions = set(versions)
+
+            if not versions:
+                raise DistributionNotFound(
+                    f"No matching distribution found for {query}"
+                )
+
+            formatted_versions = [str(ver) for ver in sorted(versions, reverse=True)]
+            latest = formatted_versions[0]
+
+        dist = get_installed_distribution(query)
+
+        if options.json:
+            structured_output = {
+                "name": query,
+                "versions": formatted_versions,
+                "latest": latest,
+            }
+
+            if dist is not None:
+                structured_output["installed_version"] = str(dist.version)
+
+            write_output(json.dumps(structured_output))
+
+        else:
+            write_output(f"{query} ({latest})")
+            write_output("Available versions: {}".format(", ".join(formatted_versions)))
+            print_dist_installation_info(latest, dist)

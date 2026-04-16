@@ -67,4 +67,4 @@ class FunctionFilter(Filter):
 
     def filter(self, lexer, stream):
         # pylint: disable=not-callable
-        pass
+        yield from self.function(lexer, stream, self.options)

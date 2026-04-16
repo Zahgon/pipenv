@@ -31,7 +31,7 @@ class TOMLChar(str):
         """
         Whether the character if a valid integer or float value character or not.
         """
-        pass
+        return self in self.NUMBER
 
     def is_ws(self) -> bool:
         """

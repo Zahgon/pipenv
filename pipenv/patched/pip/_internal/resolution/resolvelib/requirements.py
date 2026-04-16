@@ -32,7 +32,7 @@ class ExplicitRequirement(Requirement):
     @property
     def project_name(self) -> NormalizedName:
         # No need to canonicalize - the candidate did this
-        pass
+        return self.candidate.project_name
 
     @property
     def name(self) -> str:
@@ -59,7 +59,11 @@ class SpecifierRequirement(Requirement):
 
     @property
     def _equal(self) -> str:
-        pass
+        if self._equal_cache is not None:
+            return self._equal_cache
+
+        self._equal_cache = str(self._ireq)
+        return self._equal_cache
 
     def __str__(self) -> str:
         return str(self._ireq.req)
@@ -81,7 +85,8 @@ class SpecifierRequirement(Requirement):
 
     @property
     def project_name(self) -> NormalizedName:
-        pass
+        assert self._ireq.req, "Specifier-backed ireq is always PEP 508"
+        return canonicalize_name(self._ireq.req.name)
 
     @property
     def name(self) -> str:
@@ -131,7 +136,11 @@ class SpecifierWithoutExtrasRequirement(SpecifierRequirement):
 
     @property
     def _equal(self) -> str:
-        pass
+        if self._equal_cache is not None:
+            return self._equal_cache
+
+        self._equal_cache = str(self._ireq)
+        return self._equal_cache
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, SpecifierWithoutExtrasRequirement):
@@ -184,7 +193,7 @@ class RequiresPythonRequirement(Requirement):
 
     @property
     def project_name(self) -> NormalizedName:
-        pass
+        return self._candidate.project_name
 
     @property
     def name(self) -> str:
@@ -226,7 +235,7 @@ class UnsatisfiableRequirement(Requirement):
 
     @property
     def project_name(self) -> NormalizedName:
-        pass
+        return self._name
 
     @property
     def name(self) -> str:

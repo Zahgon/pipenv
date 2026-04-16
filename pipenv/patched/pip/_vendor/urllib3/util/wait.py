@@ -68,11 +68,42 @@ else:
 
 
 def select_wait_for_socket(sock, read=False, write=False, timeout=None):
-    pass
+    if not read and not write:
+        raise RuntimeError("must specify at least one of read=True, write=True")
+    rcheck = []
+    wcheck = []
+    if read:
+        rcheck.append(sock)
+    if write:
+        wcheck.append(sock)
+    # When doing a non-blocking connect, most systems signal success by
+    # marking the socket writable. Windows, though, signals success by marked
+    # it as "exceptional". We paper over the difference by checking the write
+    # sockets for both conditions. (The stdlib selectors module does the same
+    # thing.)
+    fn = partial(select.select, rcheck, wcheck, wcheck)
+    rready, wready, xready = _retry_on_intr(fn, timeout)
+    return bool(rready or wready or xready)
 
 
 def poll_wait_for_socket(sock, read=False, write=False, timeout=None):
-    pass
+    if not read and not write:
+        raise RuntimeError("must specify at least one of read=True, write=True")
+    mask = 0
+    if read:
+        mask |= select.POLLIN
+    if write:
+        mask |= select.POLLOUT
+    poll_obj = select.poll()
+    poll_obj.register(sock, mask)
+
+    # For some reason, poll() takes timeout in milliseconds
+    def do_poll(t):
+        if t is not None:
+            t *= 1000
+        return poll_obj.poll(t)
+
+    return bool(_retry_on_intr(do_poll, timeout))
 
 
 def null_wait_for_socket(*args, **kwargs):

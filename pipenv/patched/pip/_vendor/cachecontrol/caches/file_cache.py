@@ -74,7 +74,8 @@ class _FileCacheMixin:
     def set(
         self, key: str, value: bytes, expires: int | datetime | None = None
     ) -> None:
-        pass
+        name = self._fn(key)
+        self._write(name, value)
 
     def _write(self, path: str, data: bytes) -> None:
         """
@@ -140,4 +141,5 @@ def url_to_file_path(url: str, filecache: FileCache) -> str:
 
     This does not ensure the file exists!
     """
-    pass
+    key = CacheController.cache_url(url)
+    return filecache._fn(key)

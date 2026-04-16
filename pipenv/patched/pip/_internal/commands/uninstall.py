@@ -38,7 +38,28 @@ class UninstallCommand(Command, SessionCommandMixin):
       %prog [options] -r <requirements file> ..."""
 
     def add_options(self) -> None:
-        pass
+        self.cmd_opts.add_option(
+            "-r",
+            "--requirement",
+            dest="requirements",
+            action="append",
+            default=[],
+            metavar="file",
+            help=(
+                "Uninstall all the packages listed in the given requirements "
+                "file.  This option can be used multiple times."
+            ),
+        )
+        self.cmd_opts.add_option(
+            "-y",
+            "--yes",
+            dest="yes",
+            action="store_true",
+            help="Don't ask for confirmation of uninstall deletions.",
+        )
+        self.cmd_opts.add_option(cmdoptions.root_user_action())
+        self.cmd_opts.add_option(cmdoptions.override_externally_managed())
+        self.parser.insert_option_group(0, self.cmd_opts)
 
     def run(self, options: Values, args: list[str]) -> int:
         session = self.get_default_session(options)
