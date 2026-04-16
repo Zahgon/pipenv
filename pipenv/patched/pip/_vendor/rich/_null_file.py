@@ -13,7 +13,7 @@ class NullFile(IO[str]):
         return ""
 
     def readable(self) -> bool:
-        return False
+        pass
 
     def readline(self, __limit: int = 1) -> str:
         return ""
@@ -25,7 +25,7 @@ class NullFile(IO[str]):
         return 0
 
     def seekable(self) -> bool:
-        return False
+        pass
 
     def tell(self) -> int:
         return 0
@@ -34,7 +34,7 @@ class NullFile(IO[str]):
         return 0
 
     def writable(self) -> bool:
-        return False
+        pass
 
     def writelines(self, __lines: Iterable[str]) -> None:
         pass

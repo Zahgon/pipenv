@@ -233,7 +233,7 @@ class FrozenRequirement:
 
     @property
     def canonical_name(self) -> NormalizedName:
-        return canonicalize_name(self.name)
+        pass
 
     @classmethod
     def from_dist(cls, dist: BaseDistribution) -> FrozenRequirement:

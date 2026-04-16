@@ -34,7 +34,7 @@ import itertools
 
 
 def _nonblank(str):
-    return str and not str.startswith("#")
+    pass
 
 
 @functools.singledispatch
@@ -58,7 +58,7 @@ def yield_lines(iterable):
 
 @yield_lines.register(str)
 def _(text):
-    return filter(_nonblank, map(str.strip, text.splitlines()))
+    pass
 
 
 def drop_comment(line):

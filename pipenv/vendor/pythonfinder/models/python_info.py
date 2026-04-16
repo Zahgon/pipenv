@@ -38,7 +38,7 @@ class PythonInfo:
         """
         Check if this is a valid Python executable.
         """
-        return True  # Since this object is only created for valid Python executables
+        pass
 
     @property
     def as_python(self) -> PythonInfo:
@@ -46,44 +46,21 @@ class PythonInfo:
         Return self as a PythonInfo object.
         This is for compatibility with the test suite.
         """
-        return self
+        pass
 
     @property
     def version_tuple(self) -> tuple[int | None, int | None, int | None, bool, bool, bool]:
         """
         Provides a version tuple for using as a dictionary key.
         """
-        return (
-            self.major,
-            self.minor,
-            self.patch,
-            self.is_prerelease,
-            self.is_devrelease,
-            self.is_debug,
-        )
+        pass
 
     @property
     def version_sort(self) -> tuple[int, int, int, int, int]:
         """
         A tuple for sorting against other instances of the same class.
         """
-        company_sort = 1 if (self.company and self.company == "PythonCore") else 0
-        release_sort = 2
-        if self.is_postrelease:
-            release_sort = 3
-        elif self.is_prerelease:
-            release_sort = 1
-        elif self.is_devrelease:
-            release_sort = 0
-        elif self.is_debug:
-            release_sort = 1
-        return (
-            company_sort,
-            self.major or 0,  # Handle None case by defaulting to 0
-            self.minor or 0,
-            self.patch or 0,
-            release_sort,
-        )
+        pass
 
     def matches(
         self,

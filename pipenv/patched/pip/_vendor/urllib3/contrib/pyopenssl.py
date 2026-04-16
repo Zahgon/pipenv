@@ -129,26 +129,12 @@ log = logging.getLogger(__name__)
 
 def inject_into_urllib3():
     "Monkey-patch urllib3 with PyOpenSSL-backed SSL-support."
-
-    _validate_dependencies_met()
-
-    util.SSLContext = PyOpenSSLContext
-    util.ssl_.SSLContext = PyOpenSSLContext
-    util.HAS_SNI = HAS_SNI
-    util.ssl_.HAS_SNI = HAS_SNI
-    util.IS_PYOPENSSL = True
-    util.ssl_.IS_PYOPENSSL = True
+    pass
 
 
 def extract_from_urllib3():
     "Undo monkey-patching by :func:`inject_into_urllib3`."
-
-    util.SSLContext = orig_util_SSLContext
-    util.ssl_.SSLContext = orig_util_SSLContext
-    util.HAS_SNI = orig_util_HAS_SNI
-    util.ssl_.HAS_SNI = orig_util_HAS_SNI
-    util.IS_PYOPENSSL = False
-    util.ssl_.IS_PYOPENSSL = False
+    pass
 
 
 def _validate_dependencies_met():
@@ -156,25 +142,7 @@ def _validate_dependencies_met():
     Verifies that PyOpenSSL's package-level dependencies have been met.
     Throws `ImportError` if they are not met.
     """
-    # Method added in `cryptography==1.1`; not available in older versions
-    from cryptography.x509.extensions import Extensions
-
-    if getattr(Extensions, "get_extension_for_class", None) is None:
-        raise ImportError(
-            "'cryptography' module missing required functionality.  "
-            "Try upgrading to v1.3.4 or newer."
-        )
-
-    # pyOpenSSL 0.14 and above use cryptography for OpenSSL bindings. The _x509
-    # attribute is only present on those versions.
-    from OpenSSL.crypto import X509
-
-    x509 = X509()
-    if getattr(x509, "_x509", None) is None:
-        raise ImportError(
-            "'pyOpenSSL' module missing required functionality. "
-            "Try upgrading to v0.14 or newer."
-        )
+    pass
 
 
 def _dnsname_to_stdlib(name):
@@ -190,34 +158,7 @@ def _dnsname_to_stdlib(name):
     If the name cannot be idna-encoded then we return None signalling that
     the name given should be skipped.
     """
-
-    def idna_encode(name):
-        """
-        Borrowed wholesale from the Python Cryptography Project. It turns out
-        that we can't just safely call `idna.encode`: it can explode for
-        wildcard names. This avoids that problem.
-        """
-        from pipenv.patched.pip._vendor import idna
-
-        try:
-            for prefix in [u"*.", u"."]:
-                if name.startswith(prefix):
-                    name = name[len(prefix) :]
-                    return prefix.encode("ascii") + idna.encode(name)
-            return idna.encode(name)
-        except idna.core.IDNAError:
-            return None
-
-    # Don't send IPv6 addresses through the IDNA encoder.
-    if ":" in name:
-        return name
-
-    name = idna_encode(name)
-    if name is None:
-        return None
-    elif sys.version_info >= (3, 0):
-        name = name.decode("utf-8")
-    return name
+    pass
 
 
 def get_subj_alt_name(peer_cert):
@@ -292,10 +233,7 @@ class WrappedSocket(object):
 
     # Copy-pasted from Python 3.5 source code
     def _decref_socketios(self):
-        if self._makefile_refs > 0:
-            self._makefile_refs -= 1
-        if self._closed:
-            self.close()
+        pass
 
     def recv(self, *args, **kwargs):
         try:
@@ -399,20 +337,16 @@ class WrappedSocket(object):
         return self.connection.get_protocol_version_name()
 
     def _reuse(self):
-        self._makefile_refs += 1
+        pass
 
     def _drop(self):
-        if self._makefile_refs < 1:
-            self.close()
-        else:
-            self._makefile_refs -= 1
+        pass
 
 
 if _fileobject:  # Platform-specific: Python 2
 
     def makefile(self, mode, bufsize=-1):
-        self._makefile_refs += 1
-        return _fileobject(self, mode, bufsize, close=True)
+        pass
 
 else:  # Platform-specific: Python 3
     makefile = backport_makefile
@@ -444,11 +378,11 @@ class PyOpenSSLContext(object):
 
     @property
     def verify_mode(self):
-        return _openssl_to_stdlib_verify[self._ctx.get_verify_mode()]
+        pass
 
     @verify_mode.setter
     def verify_mode(self, value):
-        self._ctx.set_verify(_stdlib_to_openssl_verify[value], _verify_callback)
+        pass
 
     def set_default_verify_paths(self):
         self._ctx.set_default_verify_paths()
@@ -515,4 +449,4 @@ class PyOpenSSLContext(object):
 
 
 def _verify_callback(cnx, x509, err_no, err_depth, return_code):
-    return err_no == 0
+    pass

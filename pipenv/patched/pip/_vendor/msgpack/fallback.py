@@ -56,10 +56,7 @@ DEFAULT_RECURSE_LIMIT = 511
 
 
 def _check_type_strict(obj, t, type=type, tuple=tuple):
-    if type(t) is tuple:
-        return type(obj) in t
-    else:
-        return type(obj) is t
+    pass
 
 
 def _get_data_from_buffer(obj):
@@ -343,9 +340,7 @@ class Unpacker:
         return self._buffer[self._buff_i :]
 
     def read_bytes(self, n):
-        ret = self._read(n, raise_outofdata=False)
-        self._consume()
-        return ret
+        pass
 
     def _read(self, n, raise_outofdata=True):
         # (int) -> bytearray
@@ -588,14 +583,10 @@ class Unpacker:
         return ret
 
     def read_array_header(self):
-        ret = self._unpack(EX_READ_ARRAY_HEADER)
-        self._consume()
-        return ret
+        pass
 
     def read_map_header(self):
-        ret = self._unpack(EX_READ_MAP_HEADER)
-        self._consume()
-        return ret
+        pass
 
     def tell(self):
         return self._stream_offset
@@ -809,58 +800,16 @@ class Packer:
             return ret
 
     def pack_map_pairs(self, pairs):
-        self._pack_map_pairs(len(pairs), pairs)
-        if self._autoreset:
-            ret = self._buffer.getvalue()
-            self._buffer = BytesIO()
-            return ret
+        pass
 
     def pack_array_header(self, n):
-        if n >= 2**32:
-            raise ValueError
-        self._pack_array_header(n)
-        if self._autoreset:
-            ret = self._buffer.getvalue()
-            self._buffer = BytesIO()
-            return ret
+        pass
 
     def pack_map_header(self, n):
-        if n >= 2**32:
-            raise ValueError
-        self._pack_map_header(n)
-        if self._autoreset:
-            ret = self._buffer.getvalue()
-            self._buffer = BytesIO()
-            return ret
+        pass
 
     def pack_ext_type(self, typecode, data):
-        if not isinstance(typecode, int):
-            raise TypeError("typecode must have int type.")
-        if not 0 <= typecode <= 127:
-            raise ValueError("typecode should be 0-127")
-        if not isinstance(data, bytes):
-            raise TypeError("data must have bytes type")
-        L = len(data)
-        if L > 0xFFFFFFFF:
-            raise ValueError("Too large data")
-        if L == 1:
-            self._buffer.write(b"\xd4")
-        elif L == 2:
-            self._buffer.write(b"\xd5")
-        elif L == 4:
-            self._buffer.write(b"\xd6")
-        elif L == 8:
-            self._buffer.write(b"\xd7")
-        elif L == 16:
-            self._buffer.write(b"\xd8")
-        elif L <= 0xFF:
-            self._buffer.write(b"\xc7" + struct.pack("B", L))
-        elif L <= 0xFFFF:
-            self._buffer.write(b"\xc8" + struct.pack(">H", L))
-        else:
-            self._buffer.write(b"\xc9" + struct.pack(">I", L))
-        self._buffer.write(struct.pack("B", typecode))
-        self._buffer.write(data)
+        pass
 
     def _pack_array_header(self, n):
         if n <= 0x0F:
@@ -923,7 +872,4 @@ class Packer:
 
     def getbuffer(self):
         """Return view of internal buffer."""
-        if _USING_STRINGBUILDER:
-            return memoryview(self.bytes())
-        else:
-            return self._buffer.getbuffer()
+        pass

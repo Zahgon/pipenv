@@ -104,7 +104,7 @@ class RowSplitter(Splitter):
     name = "row"
 
     def get_tree_icon(self) -> str:
-        return "[layout.tree.row]⬌"
+        pass
 
     def divide(
         self, children: Sequence["Layout"], region: Region
@@ -124,7 +124,7 @@ class ColumnSplitter(Splitter):
     name = "column"
 
     def get_tree_icon(self) -> str:
-        return "[layout.tree.column]⬍"
+        pass
 
     def divide(
         self, children: Sequence["Layout"], region: Region
@@ -183,17 +183,17 @@ class Layout:
     @property
     def renderable(self) -> RenderableType:
         """Layout renderable."""
-        return self if self._children else self._renderable
+        pass
 
     @property
     def children(self) -> List["Layout"]:
         """Gets (visible) layout children."""
-        return [child for child in self._children if child.visible]
+        pass
 
     @property
     def map(self) -> RenderMap:
         """Get a map of the last render."""
-        return self._render_map
+        pass
 
     def get(self, name: str) -> Optional["Layout"]:
         """Get a named layout, or None if it doesn't exist.
@@ -222,41 +222,7 @@ class Layout:
     @property
     def tree(self) -> "Tree":
         """Get a tree renderable to show layout structure."""
-        from pipenv.patched.pip._vendor.rich.styled import Styled
-        from pipenv.patched.pip._vendor.rich.table import Table
-        from pipenv.patched.pip._vendor.rich.tree import Tree
-
-        def summary(layout: "Layout") -> Table:
-            icon = layout.splitter.get_tree_icon()
-
-            table = Table.grid(padding=(0, 1, 0, 0))
-
-            text: RenderableType = (
-                Pretty(layout) if layout.visible else Styled(Pretty(layout), "dim")
-            )
-            table.add_row(icon, text)
-            _summary = table
-            return _summary
-
-        layout = self
-        tree = Tree(
-            summary(layout),
-            guide_style=f"layout.tree.{layout.splitter.name}",
-            highlight=True,
-        )
-
-        def recurse(tree: "Tree", layout: "Layout") -> None:
-            for child in layout._children:
-                recurse(
-                    tree.add(
-                        summary(child),
-                        guide_style=f"layout.tree.{child.splitter.name}",
-                    ),
-                    child,
-                )
-
-        recurse(tree, self)
-        return tree
+        pass
 
     def split(
         self,
@@ -290,11 +256,7 @@ class Layout:
             *layouts (Union[Layout, RenderableType]): Positional arguments should be renderables or (sub) Layout instances.
 
         """
-        _layouts = (
-            layout if isinstance(layout, Layout) else Layout(layout)
-            for layout in layouts
-        )
-        self._children.extend(_layouts)
+        pass
 
     def split_row(self, *layouts: Union["Layout", RenderableType]) -> None:
         """Split the layout in to a row (layouts side by side).
@@ -314,7 +276,7 @@ class Layout:
 
     def unsplit(self) -> None:
         """Reset splits to initial state."""
-        del self._children[:]
+        pass
 
     def update(self, renderable: RenderableType) -> None:
         """Update renderable.
@@ -332,15 +294,7 @@ class Layout:
             console (Console): Console instance where Layout is to be rendered.
             layout_name (str): Name of layout.
         """
-        with self._lock:
-            layout = self[layout_name]
-            region, _lines = self._render_map[layout]
-            (x, y, width, height) = region
-            lines = console.render_lines(
-                layout, console.options.update_dimensions(width, height)
-            )
-            self._render_map[layout] = LayoutRender(region, lines)
-            console.update_screen_lines(lines, x, y)
+        pass
 
     def _make_region_map(self, width: int, height: int) -> RegionMap:
         """Create a dict that maps layout on to Region."""

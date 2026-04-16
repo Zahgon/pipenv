@@ -30,10 +30,7 @@ class Theme:
     @property
     def config(self) -> str:
         """Get contents of a config file for this theme."""
-        config = "[styles]\n" + "\n".join(
-            f"{name} = {style}" for name, style in sorted(self.styles.items())
-        )
-        return config
+        pass
 
     @classmethod
     def from_file(
@@ -104,10 +101,7 @@ class ThemeStack:
 
     def pop_theme(self) -> None:
         """Pop (and discard) the top-most theme."""
-        if len(self._entries) == 1:
-            raise ThemeStackError("Unable to pop base theme")
-        self._entries.pop()
-        self.get = self._entries[-1].get
+        pass
 
 
 if __name__ == "__main__":  # pragma: no cover

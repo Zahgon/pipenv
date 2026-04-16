@@ -199,26 +199,7 @@ def install(
 
     def display_hook(value: Any) -> None:
         """Replacement sys.displayhook which prettifies objects with Rich."""
-        if value is not None:
-            assert console is not None
-            builtins._ = None  # type: ignore[attr-defined]
-            console.print(
-                (
-                    value
-                    if _safe_isinstance(value, RichRenderable)
-                    else Pretty(
-                        value,
-                        overflow=overflow,
-                        indent_guides=indent_guides,
-                        max_length=max_length,
-                        max_string=max_string,
-                        max_depth=max_depth,
-                        expand_all=expand_all,
-                    )
-                ),
-                crop=crop,
-            )
-            builtins._ = value  # type: ignore[attr-defined]
+        pass
 
     try:
         ip = get_ipython()  # type: ignore[name-defined]
@@ -355,25 +336,15 @@ class Pretty(JupyterMixin):
 
 
 def _get_braces_for_defaultdict(_object: DefaultDict[Any, Any]) -> Tuple[str, str, str]:
-    return (
-        f"defaultdict({_object.default_factory!r}, {{",
-        "})",
-        f"defaultdict({_object.default_factory!r}, {{}})",
-    )
+    pass
 
 
 def _get_braces_for_deque(_object: Deque[Any]) -> Tuple[str, str, str]:
-    if _object.maxlen is None:
-        return ("deque([", "])", "deque()")
-    return (
-        "deque([",
-        f"], maxlen={_object.maxlen})",
-        f"deque(maxlen={_object.maxlen})",
-    )
+    pass
 
 
 def _get_braces_for_array(_object: "array[Any]") -> Tuple[str, str, str]:
-    return (f"array({_object.typecode!r}, [", "])", f"array({_object.typecode!r})")
+    pass
 
 
 _BRACES: Dict[type, Callable[[Any], Tuple[str, str, str]]] = {
@@ -506,7 +477,7 @@ class _Line:
     @property
     def expandable(self) -> bool:
         """Check if the line may be expanded."""
-        return bool(self.node is not None and self.node.children)
+        pass
 
     def check_length(self, max_length: int) -> bool:
         """Check this line fits within a given number of cells."""

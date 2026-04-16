@@ -48,7 +48,7 @@ class Scanner:
 
     def eos(self):
         """`True` if the scanner reached the end of text."""
-        return self.pos >= self.data_length
+        pass
     eos = property(eos, eos.__doc__)
 
     def check(self, pattern):
@@ -79,22 +79,11 @@ class Scanner:
         pointer before the pattern was matched, ``pos`` is the
         end position.
         """
-        if self.eos:
-            raise EndOfText()
-        if pattern not in self._re_cache:
-            self._re_cache[pattern] = re.compile(pattern, self.flags)
-        self.last = self.match
-        m = self._re_cache[pattern].match(self.data, self.pos)
-        if m is None:
-            return False
-        self.start_pos = m.start()
-        self.pos = m.end()
-        self.match = m.group()
-        return True
+        pass
 
     def get_char(self):
         """Scan exactly one char."""
-        self.scan('.')
+        pass
 
     def __repr__(self):
         return '<%s %d/%d>' % (

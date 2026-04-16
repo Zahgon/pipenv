@@ -69,16 +69,7 @@ def validate_python_path(value):
 
 
 def validate_bool_or_none(value):
-    if value is None:
-        return False
-    if isinstance(value, bool):
-        return value
-    from pipenv.utils.shell import env_to_bool
-
-    try:
-        return env_to_bool(str(value))
-    except ValueError:
-        return bool(value)
+    pass
 
 
 def validate_pypi_mirror(value):

@@ -84,7 +84,7 @@ class DirectedGraph(Generic[KT]):
             self._forwards[t].remove(key)
 
     def connected(self, f: KT, t: KT) -> bool:
-        return f in self._backwards[t] and t in self._forwards[f]
+        pass
 
     def connect(self, f: KT, t: KT) -> None:
         """Connect two existing vertices.
@@ -97,15 +97,13 @@ class DirectedGraph(Generic[KT]):
         self._backwards[t].add(f)
 
     def iter_edges(self) -> Iterator[tuple[KT, KT]]:
-        for f, children in self._forwards.items():
-            for t in children:
-                yield f, t
+        pass
 
     def iter_children(self, key: KT) -> Iterator[KT]:
         return iter(self._forwards[key])
 
     def iter_parents(self, key: KT) -> Iterator[KT]:
-        return iter(self._backwards[key])
+        pass
 
 
 class IteratorMapping(Mapping[KT, Iterator[CT]], Generic[RT, CT, KT]):

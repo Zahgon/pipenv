@@ -47,9 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_statefile_name(key: str) -> str:
-    key_bytes = key.encode()
-    name = hashlib.sha224(key_bytes).hexdigest()
-    return name
+    pass
 
 
 class SelfCheckState:
@@ -95,40 +93,7 @@ class SelfCheckState:
 
     def set(self, pypi_version: str, current_time: datetime.datetime) -> None:
         # If we do not have a path to cache in, don't bother saving.
-        if not self._statefile_path:
-            return
-
-        statefile_directory = os.path.dirname(self._statefile_path)
-
-        # Check to make sure that we own the directory
-        if not check_path_owner(statefile_directory):
-            return
-
-        # Now that we've ensured the directory is owned by this user, we'll go
-        # ahead and make sure that all our directories are created.
-        ensure_dir(statefile_directory)
-
-        state = {
-            # Include the key so it's easy to tell which pip wrote the
-            # file.
-            "key": self.key,
-            "last_check": current_time.isoformat(),
-            "pypi_version": pypi_version,
-        }
-
-        text = json.dumps(state, sort_keys=True, separators=(",", ":"))
-
-        with adjacent_tmp_file(self._statefile_path) as f:
-            f.write(text.encode())
-            copy_directory_permissions(statefile_directory, f)
-
-        try:
-            # Since we have a prefix-specific state file, we can just
-            # overwrite whatever is there, no need to check.
-            replace(f.name, self._statefile_path)
-        except OSError:
-            # Best effort.
-            pass
+        pass
 
 
 @dataclass
@@ -162,36 +127,14 @@ def was_installed_by_pip(pkg: str) -> bool:
     This is used not to display the upgrade message when pip is in fact
     installed by system package manager, such as dnf on Fedora.
     """
-    dist = get_default_environment().get_distribution(pkg)
-    return dist is not None and "pip" == dist.installer
+    pass
 
 
 def _get_current_remote_pip_version(
     session: PipSession, options: optparse.Values
 ) -> str | None:
     # Lets use PackageFinder to see what the latest pip version is
-    link_collector = LinkCollector.create(
-        session,
-        options=options,
-        suppress_no_index=True,
-    )
-
-    # Pass allow_yanked=False so we don't suggest upgrading to a
-    # yanked version.
-    selection_prefs = SelectionPreferences(
-        allow_yanked=False,
-        release_control=ReleaseControl(only_final={"pip"}),
-    )
-
-    finder = PackageFinder.create(
-        link_collector=link_collector,
-        selection_prefs=selection_prefs,
-    )
-    best_candidate = finder.find_best_candidate("pip").best_candidate
-    if best_candidate is None:
-        return None
-
-    return str(best_candidate.version)
+    pass
 
 
 def _self_version_check_logic(
@@ -201,31 +144,7 @@ def _self_version_check_logic(
     local_version: Version,
     get_remote_version: Callable[[], str | None],
 ) -> UpgradePrompt | None:
-    remote_version_str = state.get(current_time)
-    if remote_version_str is None:
-        remote_version_str = get_remote_version()
-        if remote_version_str is None:
-            logger.debug("No remote pip version found")
-            return None
-        state.set(remote_version_str, current_time)
-
-    remote_version = parse_version(remote_version_str)
-    logger.debug("Remote version of pip: %s", remote_version)
-    logger.debug("Local version of pip:  %s", local_version)
-
-    pip_installed_by_pip = was_installed_by_pip("pip")
-    logger.debug("Was pip installed by pip? %s", pip_installed_by_pip)
-    if not pip_installed_by_pip:
-        return None  # Only suggest upgrade if pip is installed by pip.
-
-    local_version_is_older = (
-        local_version < remote_version
-        and local_version.base_version != remote_version.base_version
-    )
-    if local_version_is_older:
-        return UpgradePrompt(old=str(local_version), new=remote_version_str)
-
-    return None
+    pass
 
 
 def pip_self_version_check(session: PipSession, options: optparse.Values) -> None:
@@ -235,21 +154,4 @@ def pip_self_version_check(session: PipSession, options: optparse.Values) -> Non
     the active virtualenv or in the user's USER_CACHE_DIR keyed off the prefix
     of the pip script path.
     """
-    installed_dist = get_default_environment().get_distribution("pip")
-    if not installed_dist:
-        return
-    try:
-        check_externally_managed()
-    except ExternallyManagedEnvironment:
-        return
-
-    upgrade_prompt = _self_version_check_logic(
-        state=SelfCheckState(cache_dir=options.cache_dir),
-        current_time=datetime.datetime.now(datetime.timezone.utc),
-        local_version=installed_dist.version,
-        get_remote_version=functools.partial(
-            _get_current_remote_pip_version, session, options
-        ),
-    )
-    if upgrade_prompt is not None:
-        logger.warning("%s", upgrade_prompt, extra={"rich": True})
+    pass

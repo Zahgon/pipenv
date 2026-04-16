@@ -45,7 +45,7 @@ class Version:
         named "2.7" in pyenv. Fix that; otherwise, `None` will fail to compare
         with int.
         """
-        return (self.major, self.minor, self.patch or 0)
+        pass
 
     def matches_minor(self, other: "Version"):
         """Check whether this version matches the other in (major, minor)."""
@@ -98,25 +98,7 @@ class Installer(metaclass=ABCMeta):
                installer.
             3. In ~/.pyenv/bin or ~/.asdf/bin, depending on the installer.
         """
-        for candidate in (
-            # Look for the Python installer using the equivalent of 'which'. On
-            # Homebrew-installed systems, the env var may not be set, but this
-            # strategy will work.
-            find_windows_executable("", name),
-            # Check for explicitly set install locations (e.g. PYENV_ROOT, ASDF_DIR).
-            os.path.join(
-                os.path.expanduser(os.getenv(env_var, "/dev/null")), "bin", name
-            ),
-            # Check the pyenv/asdf-recommended from-source install locations
-            os.path.join(os.path.expanduser(f"~/.{name}"), "bin", name),
-        ):
-            if (
-                candidate is not None
-                and os.path.isfile(candidate)
-                and os.access(candidate, os.X_OK)
-            ):
-                return candidate
-        raise InstallerNotFound()
+        pass
 
     def _run(self, *args, **kwargs):
         timeout = kwargs.pop("timeout", 30)
@@ -175,7 +157,7 @@ class Pyenv(Installer):
     WIN = sys.platform.startswith("win") or (sys.platform == "cli" and os.name == "nt")
 
     def _find_installer(self):
-        return self._find_python_installer_by_name_and_env("pyenv", "PYENV_ROOT")
+        pass
 
     def _run(self, *args, **kwargs):
         if Pyenv.WIN:
@@ -207,7 +189,7 @@ class Pyenv(Installer):
 
 class Asdf(Installer):
     def _find_installer(self):
-        return self._find_python_installer_by_name_and_env("asdf", "ASDF_DIR")
+        pass
 
     def iter_installable_versions(self):
         """Iterate through CPython versions available for asdf to install."""
@@ -257,34 +239,7 @@ class PyManager(Installer):
             1. On PATH (normal case after MSIX/MSI install).
             2. In the WindowsApps directory (MSIX install without PATH update).
         """
-        if os.name != "nt":
-            raise InstallerNotFound()
-
-        # The pymanager command is the unambiguous alias for Python Install Manager.
-        # Unlike ``py``, ``pymanager`` is not provided by the legacy py.exe launcher,
-        # so finding it is sufficient to confirm pymanager is available.
-        candidate = find_windows_executable("", "pymanager")
-        if (
-            candidate is not None
-            and os.path.isfile(str(candidate))
-            and os.access(str(candidate), os.X_OK)
-        ):
-            return str(candidate)
-
-        # pymanager may be installed as an MSIX but not on PATH yet.
-        # Check the WindowsApps directory where MSIX apps are registered.
-        local_app_data = os.environ.get("LOCALAPPDATA", "")
-        if local_app_data:
-            windows_apps = os.path.join(local_app_data, "Microsoft", "WindowsApps")
-            candidate = find_windows_executable(windows_apps, "pymanager")
-            if (
-                candidate is not None
-                and os.path.isfile(str(candidate))
-                and os.access(str(candidate), os.X_OK)
-            ):
-                return str(candidate)
-
-        raise InstallerNotFound()
+        pass
 
     def __str__(self):
         return "Python Install Manager (pymanager)"

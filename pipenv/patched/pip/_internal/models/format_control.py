@@ -37,26 +37,7 @@ class FormatControl:
 
     @staticmethod
     def handle_mutual_excludes(value: str, target: set[str], other: set[str]) -> None:
-        if value.startswith("-"):
-            raise CommandError(
-                "--no-binary / --only-binary option requires 1 argument."
-            )
-        new = value.split(",")
-        while ":all:" in new:
-            other.clear()
-            target.clear()
-            target.add(":all:")
-            del new[: new.index(":all:") + 1]
-            # Without a none, we want to discard everything as :all: covers it
-            if ":none:" not in new:
-                return
-        for name in new:
-            if name == ":none:":
-                target.clear()
-                continue
-            name = canonicalize_name(name)
-            other.discard(name)
-            target.add(name)
+        pass
 
     def get_allowed_formats(self, canonical_name: str) -> frozenset[str]:
         result = {"binary", "source"}
@@ -71,8 +52,4 @@ class FormatControl:
         return frozenset(result)
 
     def disallow_binaries(self) -> None:
-        self.handle_mutual_excludes(
-            ":all:",
-            self.no_binary,
-            self.only_binary,
-        )
+        pass

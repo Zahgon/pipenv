@@ -15,26 +15,11 @@ ShellDetectionFailure = shellingham.ShellDetectionFailure
 
 
 def _build_info(value):
-    path = Path(value)
-    return (path.stem, value)
+    pass
 
 
 def detect_info(project):
-    if project.s.PIPENV_SHELL_EXPLICIT:
-        return _build_info(project.s.PIPENV_SHELL_EXPLICIT)
-    # On Windows, prefer $SHELL over shellingham process-tree detection.
-    # shellingham walks the process tree and can be confused by cmd.exe shims
-    # (e.g. pyenv), returning 'cmd' even when the user is in bash or powershell.
-    # $SHELL is set by POSIX-like environments (Git Bash, MSYS2, WSL) to the
-    # correct interactive shell.
-    if os.name == "nt" and project.s.PIPENV_SHELL:
-        return _build_info(project.s.PIPENV_SHELL)
-    try:
-        return shellingham.detect_shell()
-    except (shellingham.ShellDetectionFailure, TypeError):
-        if project.s.PIPENV_SHELL:
-            return _build_info(project.s.PIPENV_SHELL)
-    raise ShellDetectionFailure
+    pass
 
 
 def _get_activate_script(cmd, venv):
@@ -187,129 +172,7 @@ class Shell:
             _handover(self.cmd, self.args + list(args))
 
     def fork_compat(self, venv, cwd, args, quiet=False):
-        from .vendor import pexpect
-
-        # Grab current terminal dimensions to replace the hardcoded default
-        # dimensions of pexpect.
-        dims = get_terminal_size()
-        with temp_environ():
-            # Unset COLUMNS and LINES so the spawned shell can manage them.
-            # When these are exported, Bash treats them as read-only inherited
-            # values and doesn't update them on terminal resize, even with
-            # checkwinsize enabled. See: https://github.com/pypa/pipenv/issues/6169
-            os.environ.pop("COLUMNS", None)
-            os.environ.pop("LINES", None)
-            c = pexpect.spawn(self.cmd, ["-i"], dimensions=(dims.lines, dims.columns))
-
-        # Always disable PTY echo while sending the internal setup commands
-        # (activate script + deactivate wrapper) so they are not printed on
-        # the user's terminal.  These are implementation details and should be
-        # invisible regardless of --quiet mode.
-        # See: https://github.com/pypa/pipenv/issues/5954
-        #      https://github.com/pypa/pipenv/issues/6531
-        try:
-            c.setecho(False)
-        except Exception:
-            pass  # setecho may not be supported on all platforms
-
-        try:
-            # Wait for the shell to finish its startup (including any
-            # interactive prompts such as oh-my-zsh's update dialogue)
-            # before sending the activate script.  Without this, the
-            # activate command is consumed by whatever prompt appears
-            # first, and the virtualenv never gets activated.
-            # See: https://github.com/pypa/pipenv/issues/3615
-            # Prefix every internal command with a space so that shells
-            # configured with HISTCONTROL=ignorespace (the default on most
-            # distributions) do not record them in the command history.
-            # See: https://github.com/pypa/pipenv/issues/6627
-            _STARTUP_SENTINEL = "__PIPENV_STARTUP_READY__"
-            c.sendline(f" echo {_STARTUP_SENTINEL}")
-            try:
-                c.expect(_STARTUP_SENTINEL, timeout=30)
-            except Exception:
-                pass  # best-effort: continue even if the sentinel is not seen
-
-            c.sendline(_get_activate_script(self.cmd, venv))
-
-            # Wrap the deactivate function to also unset PIPENV_ACTIVE
-            deactivate_wrapper = _get_deactivate_wrapper_script(self.cmd)
-            if deactivate_wrapper:
-                c.sendline(f" {deactivate_wrapper}")
-
-            if args:
-                c.sendline(" ".join(args))
-
-            # Synchronise with the shell before re-enabling echo.
-            #
-            # Without this, there is a race condition on Docker / pty-over-pty
-            # environments (e.g. Debian 13.4 + python:3.14-slim): the shell's
-            # own readline/terminal initialisation runs asynchronously and can
-            # re-disable echo *after* our setecho(True) call, leaving the
-            # interactive session with echo permanently off so that typed
-            # characters are invisible.
-            #
-            # By sending a sentinel line and blocking until the shell echoes it
-            # back we guarantee that all previously queued commands have been
-            # fully processed and the shell is idle before we restore echo.
-            # The sentinel output is consumed by expect() and never shown to
-            # the user (PTY echo is still off at this point).
-            # See: https://github.com/pypa/pipenv/issues/6572
-            _SENTINEL = "__PIPENV_SHELL_READY__"
-            c.sendline(f" echo {_SENTINEL}")
-            try:
-                c.expect(_SENTINEL, timeout=10)
-            except Exception:
-                pass  # timeout or pattern-not-found: best-effort, continue
-        finally:
-            # Re-enable echo so the interactive session behaves normally.
-            # This runs after the sentinel sync (or immediately on exception),
-            # so the shell is guaranteed to be settled before echo is turned on.
-            try:
-                c.setecho(True)
-            except Exception:
-                pass
-
-        # Handler for terminal resizing events
-        # Must be defined here to have the shell process in its context, since
-        # we can't pass it as an argument
-        def sigwinch_passthrough(sig, data):
-            dims = get_terminal_size()
-            c.setwinsize(dims.lines, dims.columns)
-
-        signal.signal(signal.SIGWINCH, sigwinch_passthrough)
-
-        # Handle job-control signals (Ctrl+Z / suspend) so that the pipenv
-        # process properly suspends itself when the child shell is stopped,
-        # and resumes the child when pipenv is continued.
-        # Without this, pexpect's interact() loop keeps the pipenv process
-        # in the foreground and the parent shell never regains control.
-        # See: https://github.com/pypa/pipenv/issues/5359
-        if os.name != "nt" and hasattr(signal, "SIGTSTP"):
-
-            def sigtstp_handler(sig, frame):
-                # Stop the child shell process group
-                if c.isalive():
-                    os.kill(c.pid, signal.SIGSTOP)
-                # Restore default SIGTSTP handling and re-raise so the
-                # OS stops the pipenv process itself.
-                signal.signal(signal.SIGTSTP, signal.SIG_DFL)
-                os.kill(os.getpid(), signal.SIGTSTP)
-
-            def sigcont_handler(sig, frame):
-                # Re-install our custom SIGTSTP handler after being resumed
-                signal.signal(signal.SIGTSTP, sigtstp_handler)
-                # Resume the child shell process
-                if c.isalive():
-                    os.kill(c.pid, signal.SIGCONT)
-
-            signal.signal(signal.SIGTSTP, sigtstp_handler)
-            signal.signal(signal.SIGCONT, sigcont_handler)
-
-        # Interact with the new shell.
-        c.interact(escape_character=None)
-        c.close()
-        sys.exit(c.exitstatus)
+        pass
 
 
 POSSIBLE_ENV_PYTHON = [Path("bin", "python"), Path("Scripts", "python.exe")]
@@ -415,20 +278,8 @@ SHELL_LOOKUP = collections.defaultdict(
 
 
 def _detect_emulator():
-    keys = []
-    if os.environ.get("CMDER_ROOT"):
-        keys.append("cmder")
-    if os.environ.get("MSYSTEM"):
-        keys.append("msys")
-    return ",".join(keys)
+    pass
 
 
 def choose_shell(project):
-    emulator = project.s.PIPENV_EMULATOR.lower() or _detect_emulator()
-    type_, command = detect_info(project)
-    shell_types = SHELL_LOOKUP[type_]
-    for key in emulator.split(","):
-        key = key.strip().lower()
-        if key in shell_types:
-            return shell_types[key](command)
-    return shell_types[""](command)
+    pass

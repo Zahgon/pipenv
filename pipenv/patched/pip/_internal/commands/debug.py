@@ -167,9 +167,7 @@ class DebugCommand(Command):
     ignore_require_venv = True
 
     def add_options(self) -> None:
-        cmdoptions.add_target_python_options(self.cmd_opts)
-        self.parser.insert_option_group(0, self.cmd_opts)
-        self.parser.config.load()
+        pass
 
     def run(self, options: Values, args: list[str]) -> int:
         logger.warning(

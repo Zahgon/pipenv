@@ -14,22 +14,7 @@ def _normalize_name(name: str) -> str:
 def _normalize_group_names(
     dependency_groups: Mapping[str, str | Mapping[str, str]],
 ) -> Mapping[str, str | Mapping[str, str]]:
-    original_names: dict[str, list[str]] = {}
-    normalized_groups = {}
-
-    for group_name, value in dependency_groups.items():
-        normed_group_name = _normalize_name(group_name)
-        original_names.setdefault(normed_group_name, []).append(group_name)
-        normalized_groups[normed_group_name] = value
-
-    errors = []
-    for normed_name, names in original_names.items():
-        if len(names) > 1:
-            errors.append(f"{normed_name} ({', '.join(names)})")
-    if errors:
-        raise ValueError(f"Duplicate dependency group names: {', '.join(errors)}")
-
-    return normalized_groups
+    pass
 
 
 @dataclasses.dataclass

@@ -641,16 +641,7 @@ def do_where(project, virtualenv=False, bare=True):
 
 
 def inline_activate_virtual_environment(project):
-    root = project.virtualenv_location
-    virtualenv_path = Path(root)
-
-    if (virtualenv_path / "pyvenv.cfg").exists():
-        _inline_activate_venv(project)
-    else:
-        _inline_activate_virtualenv(project)
-
-    if "VIRTUAL_ENV" not in os.environ:
-        os.environ["VIRTUAL_ENV"] = str(virtualenv_path)
+    pass
 
 
 def _inline_activate_venv(project):
@@ -661,35 +652,8 @@ def _inline_activate_venv(project):
 
     See: https://bugs.python.org/issue21496#msg218455
     """
-    virtualenv_path = Path(project.virtualenv_location)
-    components = []
-
-    for name in ("bin", "Scripts"):
-        bindir = virtualenv_path / name
-        if bindir.exists():
-            components.append(str(bindir))
-
-    if "PATH" in os.environ:
-        components.append(os.environ["PATH"])
-
-    os.environ["PATH"] = os.pathsep.join(components)
+    pass
 
 
 def _inline_activate_virtualenv(project):
-    try:
-        activate_this = project._which("activate_this.py")
-        activate_path = Path(activate_this) if activate_this else None
-
-        if not activate_path or not activate_path.exists():
-            raise exceptions.VirtualenvActivationException()
-
-        code = compile(activate_path.read_text(), str(activate_path), "exec")
-        exec(code, {"__file__": str(activate_path)})
-
-    # Catch all errors, just in case.
-    except Exception:
-        err.print(
-            "[bold][red]Warning: [/red][/bold]"
-            "There was an unexpected error while activating your "
-            "virtualenv. Continuing anyway..."
-        )
+    pass

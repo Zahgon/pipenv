@@ -33,56 +33,7 @@ class FreezeCommand(Command):
       %prog [options]"""
 
     def add_options(self) -> None:
-        self.cmd_opts.add_option(
-            "-r",
-            "--requirement",
-            dest="requirements",
-            action="append",
-            default=[],
-            metavar="file",
-            help=(
-                "Use the order in the given requirements file and its "
-                "comments when generating output. This option can be "
-                "used multiple times."
-            ),
-        )
-        self.cmd_opts.add_option(
-            "-l",
-            "--local",
-            dest="local",
-            action="store_true",
-            default=False,
-            help=(
-                "If in a virtualenv that has global access, do not output "
-                "globally-installed packages."
-            ),
-        )
-        self.cmd_opts.add_option(
-            "--user",
-            dest="user",
-            action="store_true",
-            default=False,
-            help="Only output packages installed in user-site.",
-        )
-        self.cmd_opts.add_option(cmdoptions.list_path())
-        self.cmd_opts.add_option(
-            "--all",
-            dest="freeze_all",
-            action="store_true",
-            help=(
-                "Do not skip these packages in the output:"
-                " {}".format(", ".join(_dev_pkgs()))
-            ),
-        )
-        self.cmd_opts.add_option(
-            "--exclude-editable",
-            dest="exclude_editable",
-            action="store_true",
-            help="Exclude editable package from output.",
-        )
-        self.cmd_opts.add_option(cmdoptions.list_exclude())
-
-        self.parser.insert_option_group(0, self.cmd_opts)
+        pass
 
     def run(self, options: Values, args: list[str]) -> int:
         skip = set(stdlib_pkgs)

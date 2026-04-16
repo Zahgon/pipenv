@@ -86,15 +86,15 @@ class Source(str):
 
     @property
     def state(self) -> _StateHandler:
-        return self._state
+        pass
 
     @property
     def idx(self) -> int:
-        return self._idx
+        pass
 
     @property
     def current(self) -> TOMLChar:
-        return self._current
+        pass
 
     @property
     def marker(self) -> int:

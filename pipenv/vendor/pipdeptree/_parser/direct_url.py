@@ -91,56 +91,17 @@ def _parse_info_block(data: dict) -> VcsInfo | ArchiveInfo | DirInfo:
 
 def _parse_vcs_info(vcs_data: dict) -> VcsInfo:
     """Parse vcs_info dictionary into VcsInfo object."""
-    if "vcs" not in vcs_data:
-        msg = "Missing required vcs_info.vcs field"
-        raise DirectUrlValidationError(msg)
-    if not isinstance(vcs_data["vcs"], str):
-        msg = "vcs_info.vcs must be a string"
-        raise DirectUrlValidationError(msg)
-    commit_id = vcs_data.get("commit_id")
-    if commit_id is not None and not isinstance(commit_id, str):
-        msg = "vcs_info.commit_id must be a string"
-        raise DirectUrlValidationError(msg)
-    requested_revision = vcs_data.get("requested_revision")
-    if requested_revision is not None and not isinstance(requested_revision, str):
-        msg = "vcs_info.requested_revision must be a string"
-        raise DirectUrlValidationError(msg)
-    return VcsInfo(
-        vcs=vcs_data["vcs"],
-        commit_id=commit_id,
-        requested_revision=requested_revision,
-    )
+    pass
 
 
 def _parse_archive_info(archive_data: dict) -> ArchiveInfo:
     """Parse archive_info dictionary into ArchiveInfo object."""
-    hash_value = archive_data.get("hash")
-    if hash_value is not None:
-        if not isinstance(hash_value, str):
-            msg = "archive_info.hash must be a string"
-            raise DirectUrlValidationError(msg)
-        if "=" not in hash_value or len(hash_value.split("=", 1)) != 2:
-            msg = f"invalid archive_info.hash format: {hash_value!r}"
-            raise DirectUrlValidationError(msg)
-    hashes: dict[str, str] = {}
-    if raw_hashes := archive_data.get("hashes"):
-        if not isinstance(raw_hashes, dict):
-            msg = "archive_info.hashes must be a dict"
-            raise DirectUrlValidationError(msg)
-        hashes = {str(k): str(v) for k, v in raw_hashes.items()}
-    if not hashes and hash_value:
-        algo, digest = hash_value.split("=", 1)
-        hashes = {algo: digest}
-    return ArchiveInfo(hash=hash_value, hashes=hashes)
+    pass
 
 
 def _parse_dir_info(dir_data: dict) -> DirInfo:
     """Parse dir_info dictionary into DirInfo object."""
-    editable = dir_data.get("editable", False)
-    if not isinstance(editable, bool):
-        msg = "dir_info.editable must be a boolean"
-        raise DirectUrlValidationError(msg)
-    return DirInfo(editable=editable)
+    pass
 
 
 class DirectUrlValidationError(ValueError):
@@ -166,7 +127,7 @@ class DirectUrl:
     @property
     def redacted_url(self) -> str:
         """URL with credentials removed, preserving git@ for git VCS and ${VAR} patterns."""
-        return _redact_url(self.url, self.info)
+        pass
 
 
 @dataclass
@@ -226,15 +187,7 @@ _ENV_VAR_RE: Final[re.Pattern[str]] = re.compile(
 
 def _redact_url(url: str, info: VcsInfo | ArchiveInfo | DirInfo) -> str:
     """Strip credentials from URL, preserving git@ for git VCS and ${VAR} patterns."""
-    match = _CREDENTIAL_RE.match(url)
-    if not match:
-        return url
-    userinfo = match.group("userinfo")
-    if isinstance(info, VcsInfo) and info.vcs == "git" and userinfo == "git":
-        return url
-    if _ENV_VAR_RE.match(userinfo):
-        return url
-    return f"{match.group('scheme')}{url[match.end() :]}"
+    pass
 
 
 __all__ = [

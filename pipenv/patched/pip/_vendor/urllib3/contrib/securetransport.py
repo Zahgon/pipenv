@@ -189,24 +189,14 @@ def inject_into_urllib3():
     """
     Monkey-patch urllib3 with SecureTransport-backed SSL-support.
     """
-    util.SSLContext = SecureTransportContext
-    util.ssl_.SSLContext = SecureTransportContext
-    util.HAS_SNI = HAS_SNI
-    util.ssl_.HAS_SNI = HAS_SNI
-    util.IS_SECURETRANSPORT = True
-    util.ssl_.IS_SECURETRANSPORT = True
+    pass
 
 
 def extract_from_urllib3():
     """
     Undo monkey-patching by :func:`inject_into_urllib3`.
     """
-    util.SSLContext = orig_util_SSLContext
-    util.ssl_.SSLContext = orig_util_SSLContext
-    util.HAS_SNI = orig_util_HAS_SNI
-    util.ssl_.HAS_SNI = orig_util_HAS_SNI
-    util.IS_SECURETRANSPORT = False
-    util.ssl_.IS_SECURETRANSPORT = False
+    pass
 
 
 def _read_callback(connection_id, data_buffer, data_length_pointer):
@@ -214,54 +204,7 @@ def _read_callback(connection_id, data_buffer, data_length_pointer):
     SecureTransport read callback. This is called by ST to request that data
     be returned from the socket.
     """
-    wrapped_socket = None
-    try:
-        wrapped_socket = _connection_refs.get(connection_id)
-        if wrapped_socket is None:
-            return SecurityConst.errSSLInternal
-        base_socket = wrapped_socket.socket
-
-        requested_length = data_length_pointer[0]
-
-        timeout = wrapped_socket.gettimeout()
-        error = None
-        read_count = 0
-
-        try:
-            while read_count < requested_length:
-                if timeout is None or timeout >= 0:
-                    if not util.wait_for_read(base_socket, timeout):
-                        raise socket.error(errno.EAGAIN, "timed out")
-
-                remaining = requested_length - read_count
-                buffer = (ctypes.c_char * remaining).from_address(
-                    data_buffer + read_count
-                )
-                chunk_size = base_socket.recv_into(buffer, remaining)
-                read_count += chunk_size
-                if not chunk_size:
-                    if not read_count:
-                        return SecurityConst.errSSLClosedGraceful
-                    break
-        except (socket.error) as e:
-            error = e.errno
-
-            if error is not None and error != errno.EAGAIN:
-                data_length_pointer[0] = read_count
-                if error == errno.ECONNRESET or error == errno.EPIPE:
-                    return SecurityConst.errSSLClosedAbort
-                raise
-
-        data_length_pointer[0] = read_count
-
-        if read_count != requested_length:
-            return SecurityConst.errSSLWouldBlock
-
-        return 0
-    except Exception as e:
-        if wrapped_socket is not None:
-            wrapped_socket._exception = e
-        return SecurityConst.errSSLInternal
+    pass
 
 
 def _write_callback(connection_id, data_buffer, data_length_pointer):
@@ -269,50 +212,7 @@ def _write_callback(connection_id, data_buffer, data_length_pointer):
     SecureTransport write callback. This is called by ST to request that data
     actually be sent on the network.
     """
-    wrapped_socket = None
-    try:
-        wrapped_socket = _connection_refs.get(connection_id)
-        if wrapped_socket is None:
-            return SecurityConst.errSSLInternal
-        base_socket = wrapped_socket.socket
-
-        bytes_to_write = data_length_pointer[0]
-        data = ctypes.string_at(data_buffer, bytes_to_write)
-
-        timeout = wrapped_socket.gettimeout()
-        error = None
-        sent = 0
-
-        try:
-            while sent < bytes_to_write:
-                if timeout is None or timeout >= 0:
-                    if not util.wait_for_write(base_socket, timeout):
-                        raise socket.error(errno.EAGAIN, "timed out")
-                chunk_sent = base_socket.send(data)
-                sent += chunk_sent
-
-                # This has some needless copying here, but I'm not sure there's
-                # much value in optimising this data path.
-                data = data[chunk_sent:]
-        except (socket.error) as e:
-            error = e.errno
-
-            if error is not None and error != errno.EAGAIN:
-                data_length_pointer[0] = sent
-                if error == errno.ECONNRESET or error == errno.EPIPE:
-                    return SecurityConst.errSSLClosedAbort
-                raise
-
-        data_length_pointer[0] = sent
-
-        if sent != bytes_to_write:
-            return SecurityConst.errSSLWouldBlock
-
-        return 0
-    except Exception as e:
-        if wrapped_socket is not None:
-            wrapped_socket._exception = e
-        return SecurityConst.errSSLInternal
+    pass
 
 
 # We need to keep these two objects references alive: if they get GC'd while
@@ -568,10 +468,7 @@ class WrappedSocket(object):
 
     # Copy-pasted from Python 3.5 source code
     def _decref_socketios(self):
-        if self._makefile_refs > 0:
-            self._makefile_refs -= 1
-        if self._closed:
-            self.close()
+        pass
 
     def recv(self, bufsiz):
         buffer = ctypes.create_string_buffer(bufsiz)
@@ -754,28 +651,23 @@ class WrappedSocket(object):
             raise ssl.SSLError("Unknown TLS version: %r" % protocol)
 
     def _reuse(self):
-        self._makefile_refs += 1
+        pass
 
     def _drop(self):
-        if self._makefile_refs < 1:
-            self.close()
-        else:
-            self._makefile_refs -= 1
+        pass
 
 
 if _fileobject:  # Platform-specific: Python 2
 
     def makefile(self, mode, bufsize=-1):
-        self._makefile_refs += 1
-        return _fileobject(self, mode, bufsize, close=True)
+        pass
 
 else:  # Platform-specific: Python 3
 
     def makefile(self, mode="r", buffering=None, *args, **kwargs):
         # We disable buffering with SecureTransport because it conflicts with
         # the buffering that ST does internally (see issue #1153 for more).
-        buffering = 0
-        return backport_makefile(self, mode, buffering, *args, **kwargs)
+        pass
 
 
 WrappedSocket.makefile = makefile
@@ -804,7 +696,7 @@ class SecureTransportContext(object):
         SecureTransport cannot have its hostname checking disabled. For more,
         see the comment on getpeercert() in this file.
         """
-        return True
+        pass
 
     @check_hostname.setter
     def check_hostname(self, value):
@@ -831,11 +723,11 @@ class SecureTransportContext(object):
 
     @property
     def verify_mode(self):
-        return ssl.CERT_REQUIRED if self._verify else ssl.CERT_NONE
+        pass
 
     @verify_mode.setter
     def verify_mode(self, value):
-        self._verify = True if value == ssl.CERT_REQUIRED else False
+        pass
 
     def set_default_verify_paths(self):
         # So, this has to do something a bit weird. Specifically, what it does

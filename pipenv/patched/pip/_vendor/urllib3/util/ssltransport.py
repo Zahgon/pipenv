@@ -112,40 +112,7 @@ class SSLTransport:
         This is unfortunately a copy and paste of socket.py makefile with small
         changes to point to the socket directly.
         """
-        if not set(mode) <= {"r", "w", "b"}:
-            raise ValueError("invalid mode %r (only r, w, b allowed)" % (mode,))
-
-        writing = "w" in mode
-        reading = "r" in mode or not writing
-        assert reading or writing
-        binary = "b" in mode
-        rawmode = ""
-        if reading:
-            rawmode += "r"
-        if writing:
-            rawmode += "w"
-        raw = socket.SocketIO(self, rawmode)
-        self.socket._io_refs += 1
-        if buffering is None:
-            buffering = -1
-        if buffering < 0:
-            buffering = io.DEFAULT_BUFFER_SIZE
-        if buffering == 0:
-            if not binary:
-                raise ValueError("unbuffered streams must be binary")
-            return raw
-        if reading and writing:
-            buffer = io.BufferedRWPair(raw, raw, buffering)
-        elif reading:
-            buffer = io.BufferedReader(raw, buffering)
-        else:
-            assert writing
-            buffer = io.BufferedWriter(raw, buffering)
-        if binary:
-            return buffer
-        text = io.TextIOWrapper(buffer, encoding, errors, newline)
-        text.mode = mode
-        return text
+        pass
 
     def unwrap(self):
         self._ssl_io_loop(self.sslobj.unwrap)
@@ -160,19 +127,19 @@ class SSLTransport:
         return self.sslobj.version()
 
     def cipher(self):
-        return self.sslobj.cipher()
+        pass
 
     def selected_alpn_protocol(self):
-        return self.sslobj.selected_alpn_protocol()
+        pass
 
     def selected_npn_protocol(self):
-        return self.sslobj.selected_npn_protocol()
+        pass
 
     def shared_ciphers(self):
-        return self.sslobj.shared_ciphers()
+        pass
 
     def compression(self):
-        return self.sslobj.compression()
+        pass
 
     def settimeout(self, value):
         self.socket.settimeout(value)
@@ -181,7 +148,7 @@ class SSLTransport:
         return self.socket.gettimeout()
 
     def _decref_socketios(self):
-        self.socket._decref_socketios()
+        pass
 
     def _wrap_ssl_read(self, len, buffer=None):
         try:

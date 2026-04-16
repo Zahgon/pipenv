@@ -47,22 +47,7 @@ class Requirement:
             self.marker._markers = _normalize_extra_values(parsed.marker)
 
     def _iter_parts(self, name: str) -> Iterator[str]:
-        yield name
-
-        if self.extras:
-            formatted_extras = ",".join(sorted(self.extras))
-            yield f"[{formatted_extras}]"
-
-        if self.specifier:
-            yield str(self.specifier)
-
-        if self.url:
-            yield f" @ {self.url}"
-            if self.marker:
-                yield " "
-
-        if self.marker:
-            yield f"; {self.marker}"
+        pass
 
     def __str__(self) -> str:
         return "".join(self._iter_parts(self.name))

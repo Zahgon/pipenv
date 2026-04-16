@@ -127,10 +127,7 @@ def _patched_marker_environment(override):
     _orig = pip_markers.default_environment
 
     def _patched_default_environment():
-        env = _orig()
-        env["python_version"] = override["python_version"]
-        env["python_full_version"] = override["python_full_version"]
-        return env
+        pass
 
     pip_markers.default_environment = _patched_default_environment
     try:
@@ -312,13 +309,11 @@ class Resolver:
 
     @staticmethod
     def _get_pip_command():
-        return InstallCommand(name="InstallCommand", summary="pip Install command.")
+        pass
 
     @property
     def hash_cache(self):
-        if not self._hash_cache:
-            self._hash_cache = HashCacheMixin(self.project, self.session)
-        return self._hash_cache
+        pass
 
     def check_if_package_req_skipped(
         self,
@@ -445,32 +440,14 @@ class Resolver:
 
     @property
     def pip_command(self):
-        return self._get_pip_command()
+        pass
 
     def prepare_pip_args(self, use_pep517=None, build_isolation=True):
-        pip_args = []
-        if self.sources:
-            pip_args = prepare_pip_source_args(self.sources, pip_args)
-        if use_pep517 is False:
-            pip_args.append("--no-use-pep517")
-        if build_isolation is False:
-            pip_args.append("--no-build-isolation")
-        if self.pre:
-            pip_args.append("--pre")
-        pip_args.extend(["--cache-dir", self.project.s.PIPENV_CACHE_DIR])
-        extra_pip_args = os.environ.get("PIPENV_EXTRA_PIP_ARGS")
-        if extra_pip_args:
-            extra_pip_args = json.loads(extra_pip_args)
-            pip_args.extend(extra_pip_args)
-        return pip_args
+        pass
 
     @property  # cached_property breaks authenticated private indexes
     def pip_args(self):
-        use_pep517 = environments.get_from_env("USE_PEP517", prefix="PIP")
-        build_isolation = environments.get_from_env("BUILD_ISOLATION", prefix="PIP")
-        return self.prepare_pip_args(
-            use_pep517=use_pep517, build_isolation=build_isolation
-        )
+        pass
 
     def prepare_constraint_file(self):
         constraint_filename = prepare_constraint_file(
@@ -487,57 +464,16 @@ class Resolver:
         # resolving the default category), use them.  They include transitive
         # dependencies and exact version pins, which is critical for ensuring
         # non-default categories resolve compatible versions.  See gh-4665.
-        if self.resolved_default_deps:
-            from .dependencies import get_constraints_from_resolved_deps
-
-            default_constraints = get_constraints_from_resolved_deps(
-                self.resolved_default_deps
-            )
-        else:
-            default_constraints = get_constraints_from_deps(self.project.packages)
-        default_constraint_filename = prepare_constraint_file(
-            default_constraints,
-            directory=self.req_dir,
-            sources=None,
-            pip_args=None,
-        )
-        return default_constraint_filename
+        pass
 
     @property
     def target_py_version_info(self):
         """Extract the target Python version tuple from the Pipfile override."""
-        override = _get_pipfile_python_override(self.project)
-        if override:
-            parts = override["python_full_version"].split(".")
-            return tuple(int(part) for part in parts)
-        return None
+        pass
 
     @property  # cached_property breaks authenticated private indexes
     def pip_options(self):
-        pip_options, _ = self.pip_command.parser.parse_args(self.pip_args)
-        pip_options.cache_dir = self.project.s.PIPENV_CACHE_DIR
-        pip_options.no_python_version_warning = True
-        pip_options.no_input = self.project.settings.get("disable_pip_input", True)
-        pip_options.progress_bar = "off"
-        pip_options.ignore_requires_python = False
-        pip_options.pre = self.pre or self.project.settings.get(
-            "allow_prereleases", False
-        )
-        # Allow the user to override the keyring provider so that credential
-        # managers (e.g. Windows Credential Manager) work even when pip input
-        # is disabled.  See https://github.com/pypa/pipenv/issues/5715
-        keyring_provider = self.project.s.PIPENV_KEYRING_PROVIDER
-        if keyring_provider:
-            pip_options.keyring_provider = keyring_provider
-        # In pip 26+, setting options.pre=True is no longer sufficient to
-        # enable pre-release resolution. pip's PackageFinder uses
-        # release_control.all_releases to determine whether pre-releases are
-        # allowed, and check_release_control_exclusive() is what transforms
-        # options.pre=True into release_control.all_releases={":all:"}.
-        # pip's own commands (install, download, lock) call this in run(),
-        # but pipenv bypasses those entry points, so we must call it here.
-        check_release_control_exclusive(pip_options)
-        return pip_options
+        pass
 
     @property  # Remove cached_property to prevent stale sessions and authentication issues
     def session(self):
@@ -556,14 +492,7 @@ class Resolver:
 
     @property
     def package_finder(self):
-        py_version_info = self.target_py_version_info
-        finder = get_package_finder(
-            install_cmd=self.pip_command,
-            options=self.pip_options,
-            session=self.session,
-            py_version_info=py_version_info,
-        )
-        return finder
+        pass
 
     def finder(self, ignore_compatibility=False):
         finder = self.package_finder
@@ -581,94 +510,26 @@ class Resolver:
 
     @property
     def parsed_default_constraints(self):
-        pip_options = self.pip_options
-        pip_options.extra_index_urls = []
-        # Convert Path object to string to avoid 'PosixPath' has no attribute 'decode' error
-        constraint_file = (
-            str(self.default_constraint_file)
-            if isinstance(self.default_constraint_file, Path)
-            else self.default_constraint_file
-        )
-        parsed_default_constraints = parse_requirements(
-            constraint_file,
-            constraint=True,
-            finder=self.finder(),
-            session=self.session,
-            options=pip_options,
-        )
-        return list(parsed_default_constraints)
+        pass
 
     @property
     def parsed_constraints(self):
         """Get parsed constraints including those from default packages if needed."""
-        pip_options = self.pip_options
-        pip_options.extra_index_urls = []
-        # Convert Path object to string to avoid 'PosixPath' has no attribute 'decode' error
-        constraint_file = (
-            str(self.prepare_constraint_file())
-            if isinstance(self.prepare_constraint_file(), Path)
-            else self.prepare_constraint_file()
-        )
-        constraints = list(
-            parse_requirements(
-                constraint_file,
-                finder=self.finder(),
-                session=self.session,
-                options=pip_options,
-            )
-        )
-
-        # Only add default constraints for dev packages if setting allows
-        if self.category != "default" and self.project.settings.get(
-            "use_default_constraints", True
-        ):
-            constraints.extend(self.parsed_default_constraints)
-
-        return constraints
+        pass
 
     @property
     def default_constraints(self):
         """Get constraints from default section when installing dev packages."""
-        if not self.project.settings.get("use_default_constraints", True):
-            return set()
-
-        possible_default_constraints = [
-            install_req_from_parsed_requirement(
-                c,
-                isolated=self.pip_options.build_isolation,
-                user_supplied=False,
-            )
-            for c in self.parsed_default_constraints
-        ]
-        return set(possible_default_constraints)
+        pass
 
     @property
     def possible_constraints(self):
-        possible_constraints_list = [
-            install_req_from_parsed_requirement(
-                c,
-                isolated=self.pip_options.build_isolation,
-                user_supplied=True,
-            )
-            for c in self.parsed_constraints
-        ]
-        return possible_constraints_list
+        pass
 
     @property
     def constraints(self):
         """Get all applicable constraints."""
-        possible_constraints_list = self.possible_constraints
-        constraints_list = set()
-        for c in possible_constraints_list:
-            constraints_list.add(c)
-
-        # Always use default_constraints when installing dev-packages
-        if self.category != "default" and self.project.settings.get(
-            "use_default_constraints", True
-        ):
-            constraints_list |= self.default_constraints
-
-        return constraints_list
+        pass
 
     @contextlib.contextmanager
     def get_resolver(self, clear=False):
@@ -864,10 +725,7 @@ class Resolver:
 
     @property
     def resolve_hashes(self):
-        if self.results is not None:
-            for ireq in self.results:
-                self.hashes[ireq] = self.collect_hashes(ireq)
-        return self.hashes
+        pass
 
     def clean_skipped_result(
         self,
@@ -1108,23 +966,11 @@ def resolve(cmd, st, project):
 
     def read_stdout():
         """Read all stdout data in chunks."""
-        while True:
-            chunk = c.stdout.read(4096)
-            if not chunk:
-                break
-            stdout_chunks.append(chunk)
+        pass
 
     def read_stderr():
         """Read stderr line by line, printing verbose output or download notices."""
-        for line in iter(c.stderr.readline, ""):
-            if line.rstrip():
-                stderr_lines.append(line)
-                if is_verbose:
-                    st.console.print(line.rstrip())
-                elif _is_download_status_line(line):
-                    # Always show download progress so users know pipenv is not
-                    # frozen when pip is fetching a large package (issue #5718).
-                    err.print(f"  [dim]{line.rstrip()}[/dim]")
+        pass
 
     # Start reader threads
     stdout_thread = threading.Thread(target=read_stdout, daemon=True)

@@ -204,43 +204,7 @@ def untar_file(filename: str, location: str) -> None:
                             member.linkname = lnk_rest
 
             def pip_filter(member: tarfile.TarInfo, path: str) -> tarfile.TarInfo:
-                orig_mode = member.mode
-                try:
-                    try:
-                        member = data_filter(member, location)
-                    except tarfile.LinkOutsideDestinationError:
-                        if sys.version_info[:3] in {
-                            (3, 9, 17),
-                            (3, 10, 12),
-                            (3, 11, 4),
-                        }:
-                            # The tarfile filter in specific Python versions
-                            # raises LinkOutsideDestinationError on valid input
-                            # (https://github.com/python/cpython/issues/107845)
-                            # Ignore the error there, but do use the
-                            # more lax `tar_filter`
-                            member = tarfile.tar_filter(member, location)
-                        else:
-                            raise
-                except tarfile.TarError as exc:
-                    message = "Invalid member in the tar file {}: {}"
-                    # Filter error messages mention the member name.
-                    # No need to add it here.
-                    raise InstallationError(
-                        message.format(
-                            filename,
-                            exc,
-                        )
-                    )
-                if member.isfile() and orig_mode & 0o111:
-                    member.mode = default_mode_plus_executable
-                else:
-                    # See PEP 706 note above.
-                    # The PEP changed this from `int` to `Optional[int]`,
-                    # where None means "use the default". Mypy doesn't
-                    # know this yet.
-                    member.mode = None  # type: ignore [assignment]
-                return member
+                pass
 
             tar.extractall(location, filter=pip_filter)
 

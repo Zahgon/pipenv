@@ -54,8 +54,7 @@ class Position:
         return cls(chars=0, line=1)
 
     def set(self, other: "Position") -> None:
-        self.chars = other.chars
-        self.line = other.line
+        pass
 
     def advance(self, string: str) -> None:
         self.chars += len(string)
@@ -104,7 +103,7 @@ class Reader:
 
 def decode_escapes(regex: Pattern[str], string: str) -> str:
     def decode_match(match: Match[str]) -> str:
-        return codecs.decode(match.group(0), "unicode-escape")  # type: ignore
+        pass
 
     return regex.sub(decode_match, string)
 

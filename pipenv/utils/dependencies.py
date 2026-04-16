@@ -1058,9 +1058,7 @@ def get_link_from_line(line):
 
 
 def has_name_with_extras(requirement):
-    pattern = r"^([a-zA-Z0-9_-]+(\[[a-zA-Z0-9_-]+\])?) @ .*"
-    match = re.match(pattern, requirement)
-    return match is not None
+    pass
 
 
 def expand_env_variables(line) -> AnyStr:
@@ -1073,8 +1071,7 @@ def expand_env_variables(line) -> AnyStr:
     """
 
     def replace_with_env(match):
-        value = os.getenv(match.group(1))
-        return value if value else match.group()
+        pass
 
     return re.sub(r"\$\{([A-Z0-9_]+)\}", replace_with_env, line)
 
@@ -1236,20 +1233,7 @@ class VCSURLProcessor:
         Expands environment variables in a string, with detailed error handling.
         Supports both ${VAR} and $VAR syntax.
         """
-
-        def _replace_var(match):
-            var_name = match.group(1) or match.group(2)
-            if var_name not in os.environ:
-                raise PipenvUsageError(
-                    f"Environment variable '${var_name}' not found. "
-                    "Please ensure all required environment variables are set."
-                )
-            return os.environ[var_name]
-
-        try:
-            return cls.ENV_VAR_PATTERN.sub(_replace_var, value)
-        except Exception as e:
-            raise PipenvUsageError(f"Error expanding environment variables: {str(e)}")
+        pass
 
     @classmethod
     def process_vcs_url(cls, url: str) -> str:
@@ -1257,30 +1241,7 @@ class VCSURLProcessor:
         Processes a VCS URL, expanding environment variables in individual components.
         Handles URLs of the form: vcs+protocol://username:password@hostname/path
         """
-        parsed = urlparse(url)
-
-        # Process each component separately
-        netloc_parts = parsed.netloc.split("@")
-        if len(netloc_parts) > 1:
-            # Handle auth information
-            auth, host = netloc_parts
-            if ":" in auth:
-                username, password = auth.split(":")
-                username = cls.expand_env_vars(username)
-                password = cls.expand_env_vars(password)
-                auth = f"{username}:{password}"
-            else:
-                auth = cls.expand_env_vars(auth)
-            netloc = f"{auth}@{host}"
-        else:
-            netloc = cls.expand_env_vars(parsed.netloc)
-
-        # Reconstruct URL with processed components
-        processed_parts = list(parsed)
-        processed_parts[1] = netloc  # Update netloc
-        processed_parts[2] = cls.expand_env_vars(parsed.path)  # Update path
-
-        return urlunparse(tuple(processed_parts))
+        pass
 
 
 def install_req_from_pipfile(name: str, pipfile: Dict[str, Any]) -> Tuple[Any, Any, str]:
@@ -1439,18 +1400,7 @@ def get_constraints_from_resolved_deps(resolved_deps):
     :return: A set of constraint strings like {"sqlalchemy==1.4.5", "greenlet==1.0.0"}
     :rtype: set
     """
-    constraints = set()
-    for dep_name, dep_info in resolved_deps.items():
-        if not isinstance(dep_info, dict):
-            continue
-        # Skip path/file/VCS deps - they can't be expressed as simple constraints
-        if any(k in dep_info for k in ("path", "file", "git", "hg", "svn", "bzr")):
-            continue
-        version = dep_info.get("version")
-        if version:
-            canonical = canonicalize_name(dep_name)
-            constraints.add(f"{canonical}{version}")
-    return constraints
+    pass
 
 
 def prepare_constraint_file(
@@ -1490,13 +1440,7 @@ def is_required_version(version, specified_version):
     """Check to see if there's a hard requirement for version
     number provided in the Pipfile.
     """
-    # Certain packages may be defined with multiple values.
-    if isinstance(specified_version, dict):
-        specified_version = specified_version.get("version", "")
-    if specified_version.startswith("=="):
-        return version.strip() == specified_version.split("==")[1].strip()
-
-    return True
+    pass
 
 
 def is_editable(pipfile_entry):
@@ -1507,8 +1451,4 @@ def is_editable(pipfile_entry):
 
 @contextmanager
 def locked_repository(requirement):
-    if not requirement.is_vcs:
-        return
-    src_dir = create_tracked_tempdir(prefix="pipenv-", suffix="-src")
-    with requirement.req.locked_vcs_repo(src_dir=src_dir) as repo:
-        yield repo
+    pass

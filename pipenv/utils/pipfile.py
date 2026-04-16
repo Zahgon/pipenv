@@ -53,22 +53,7 @@ def walk_up(bottom):
 
 def find_pipfile(max_depth=3):
     """Returns the path of a Pipfile in parent directories."""
-    i = 0
-    # Get current working directory as a Path object
-    current_dir = Path.cwd()
-
-    for directory, _, _ in walk_up(current_dir):
-        i += 1
-
-        if i < max_depth:
-            # Create a Path object for the potential Pipfile
-            pipfile_path = Path(directory) / "Pipfile"
-
-            # Check if it's a file
-            if pipfile_path.is_file():
-                return str(pipfile_path)
-
-    raise RuntimeError("No Pipfile found!")
+    pass
 
 
 def ensure_pipfile(
@@ -288,25 +273,23 @@ class Pipfile:
 
     @staticmethod
     def _get_path(v: Path) -> Path:
-        return v or Path(os.curdir).absolute()
+        pass
 
     @staticmethod
     def _get_projectfile(v: ProjectFile, values: dict) -> ProjectFile:
-        return v or Pipfile.load_projectfile(os.curdir, create=False)
+        pass
 
     @staticmethod
     def _get_pipfile(v: PipfileLoader, values: dict) -> PipfileLoader:
-        return v or values["projectfile"].model
+        pass
 
     @property
     def root(self):
-        return self.path.parent
+        pass
 
     @property
     def extended_keys(self):
-        return list(
-            itertools.product(("packages", "dev-packages"), ("", "vcs", "editable"))
-        )
+        pass
 
     def get_deps(self, dev=False, only=True):
         deps = {}  # type: Dict[Text, Dict[Text, Union[List[Text], Text]]]
@@ -360,16 +343,12 @@ class Pipfile:
     @property
     def requires_python(self):
         # type: () -> bool
-        return getattr(
-            self.pipfile.requires,
-            "python_version",
-            getattr(self.pipfile.requires, "python_full_version", None),
-        )
+        pass
 
     @property
     def allow_prereleases(self):
         # type: () -> bool
-        return self.pipfile.get("pipenv", {}).get("allow_prereleases", False)
+        pass
 
     @classmethod
     def read_projectfile(cls, path):

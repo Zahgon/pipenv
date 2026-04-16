@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 # Scaffolding
 #
 def _is_kebab_case(s: str) -> bool:
-    return re.match(r"^[a-z]+(-[a-z]+)*$", s) is not None
+    pass
 
 
 def _prefix_with_indent(
@@ -504,7 +504,7 @@ class HashError(InstallationError):
             its link already populated by the resolver's _populate_link().
 
         """
-        return f"    {self._requirement_name()}"
+        pass
 
     def __str__(self) -> str:
         return f"{self.head}\n{self.body()}"
@@ -516,7 +516,7 @@ class HashError(InstallationError):
         line numbers
 
         """
-        return str(self.req) if self.req else "unknown package"
+        pass
 
 
 class VcsHashUnsupported(HashError):
@@ -564,23 +564,7 @@ class HashMissing(HashError):
 
     def body(self) -> str:
         # Dodge circular import.
-        from pipenv.patched.pip._internal.utils.hashes import FAVORITE_HASH
-
-        package = None
-        if self.req:
-            # In the case of URL-based requirements, display the original URL
-            # seen in the requirements file rather than the package name,
-            # so the output can be directly copied into the requirements file.
-            package = (
-                self.req.original_link
-                if self.req.is_direct
-                # In case someone feeds something downright stupid
-                # to InstallRequirement's constructor.
-                else getattr(self.req, "req", None)
-            )
-        return "    {} --hash={}:{}".format(
-            package or "unknown package", FAVORITE_HASH, self.gotten_hash
-        )
+        pass
 
 
 class HashUnpinned(HashError):
@@ -623,7 +607,7 @@ class HashMismatch(HashError):
         self.gots = gots
 
     def body(self) -> str:
-        return f"    {self._requirement_name()}:\n{self._hash_comparison()}"
+        pass
 
     def _hash_comparison(self) -> str:
         """
@@ -636,20 +620,7 @@ class HashMismatch(HashError):
                     Got        bcdefbcdefbcdefbcdefbcdefbcdefbcdefbcdefbcdef
 
         """
-
-        def hash_then_or(hash_name: str) -> chain[str]:
-            # For now, all the decent hashes have 6-char names, so we can get
-            # away with hard-coding space literals.
-            return chain([hash_name], repeat("    or"))
-
-        lines: list[str] = []
-        for hash_name, expecteds in self.allowed.items():
-            prefix = hash_then_or(hash_name)
-            lines.extend((f"        Expected {next(prefix)} {e}") for e in expecteds)
-            lines.append(
-                f"             Got        {self.gots[hash_name].hexdigest()}\n"
-            )
-        return "\n".join(lines)
+        pass
 
 
 class UnsupportedPythonVersion(InstallationError):

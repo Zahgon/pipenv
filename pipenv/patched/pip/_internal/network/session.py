@@ -99,10 +99,7 @@ def looks_like_ci() -> bool:
     """
     Return whether it looks like pip is running under CI.
     """
-    # We don't use the method of checking for a tty (e.g. using isatty())
-    # because some CI systems mimic a tty (e.g. Travis CI).  Thus that
-    # method doesn't provide definitive information in either direction.
-    return any(name in os.environ for name in CI_ENVIRONMENT_VARIABLES)
+    pass
 
 
 @functools.lru_cache(maxsize=1)
@@ -110,101 +107,7 @@ def user_agent() -> str:
     """
     Return a string representing the user agent.
     """
-    data: dict[str, Any] = {
-        "installer": {"name": "pip", "version": __version__},
-        "python": platform.python_version(),
-        "implementation": {
-            "name": platform.python_implementation(),
-        },
-    }
-
-    if data["implementation"]["name"] == "CPython":
-        data["implementation"]["version"] = platform.python_version()
-    elif data["implementation"]["name"] == "PyPy":
-        pypy_version_info = sys.pypy_version_info  # type: ignore
-        if pypy_version_info.releaselevel == "final":
-            pypy_version_info = pypy_version_info[:3]
-        data["implementation"]["version"] = ".".join(
-            [str(x) for x in pypy_version_info]
-        )
-    elif data["implementation"]["name"] == "Jython":
-        # Complete Guess
-        data["implementation"]["version"] = platform.python_version()
-    elif data["implementation"]["name"] == "IronPython":
-        # Complete Guess
-        data["implementation"]["version"] = platform.python_version()
-
-    if sys.platform.startswith("linux"):
-        from pipenv.patched.pip._vendor import distro
-
-        linux_distribution = distro.name(), distro.version(), distro.codename()
-        distro_infos: dict[str, Any] = dict(
-            filter(
-                lambda x: x[1],
-                zip(["name", "version", "id"], linux_distribution),
-            )
-        )
-        libc = dict(
-            filter(
-                lambda x: x[1],
-                zip(["lib", "version"], libc_ver()),
-            )
-        )
-        if libc:
-            distro_infos["libc"] = libc
-        if distro_infos:
-            data["distro"] = distro_infos
-
-    if sys.platform.startswith("darwin") and platform.mac_ver()[0]:
-        data["distro"] = {"name": "macOS", "version": platform.mac_ver()[0]}
-
-    if platform.system():
-        data.setdefault("system", {})["name"] = platform.system()
-
-    if platform.release():
-        data.setdefault("system", {})["release"] = platform.release()
-
-    if platform.machine():
-        data["cpu"] = platform.machine()
-
-    if has_tls():
-        import _ssl as ssl
-
-        data["openssl_version"] = ssl.OPENSSL_VERSION
-
-    setuptools_dist = get_default_environment().get_distribution("setuptools")
-    if setuptools_dist is not None:
-        data["setuptools_version"] = str(setuptools_dist.version)
-
-    if shutil.which("rustc") is not None:
-        # If for any reason `rustc --version` fails, silently ignore it
-        try:
-            rustc_output = subprocess.check_output(
-                ["rustc", "--version"], stderr=subprocess.STDOUT, timeout=0.5
-            )
-        except Exception:
-            pass
-        else:
-            if rustc_output.startswith(b"rustc "):
-                # The format of `rustc --version` is:
-                # `b'rustc 1.52.1 (9bc8c42bb 2021-05-09)\n'`
-                # We extract just the middle (1.52.1) part
-                data["rustc_version"] = rustc_output.split(b" ")[1].decode()
-
-    # Use None rather than False so as not to give the impression that
-    # pip knows it is not being run under CI.  Rather, it is a null or
-    # inconclusive result.  Also, we include some value rather than no
-    # value to make it easier to know that the check has been run.
-    data["ci"] = True if looks_like_ci() else None
-
-    user_data = os.environ.get("PIP_USER_AGENT_USER_DATA")
-    if user_data is not None:
-        data["user_data"] = user_data
-
-    return "{data[installer][name]}/{data[installer][version]} {json}".format(
-        data=data,
-        json=json.dumps(data, separators=(",", ":"), sort_keys=True),
-    )
+    pass
 
 
 class LocalFSAdapter(BaseAdapter):
@@ -276,14 +179,7 @@ class _SSLContextAdapterMixin:
         block: bool = DEFAULT_POOLBLOCK,
         **pool_kwargs: Any,
     ) -> PoolManager:
-        if self._ssl_context is not None:
-            pool_kwargs.setdefault("ssl_context", self._ssl_context)
-        return super().init_poolmanager(  # type: ignore[misc, no-any-return]
-            connections=connections,
-            maxsize=maxsize,
-            block=block,
-            **pool_kwargs,
-        )
+        pass
 
     def proxy_manager_for(self, proxy: str, **proxy_kwargs: Any) -> ProxyManager:
         # Proxy manager replaces the pool manager, so inject our SSL
@@ -451,76 +347,11 @@ class PipSession(requests.Session):
             self.mount(build_url_from_netloc(host) + ":", self._trusted_host_adapter)
 
     def iter_secure_origins(self) -> Generator[SecureOrigin, None, None]:
-        yield from SECURE_ORIGINS
-        for host, port in self.pip_trusted_origins:
-            yield ("*", host, "*" if port is None else port)
+        pass
 
     def is_secure_origin(self, location: Link) -> bool:
         # Determine if this url used a secure transport mechanism
-        parsed = urllib.parse.urlparse(str(location))
-        origin_protocol, origin_host, origin_port = (
-            parsed.scheme,
-            parsed.hostname,
-            parsed.port,
-        )
-
-        # The protocol to use to see if the protocol matches.
-        # Don't count the repository type as part of the protocol: in
-        # cases such as "git+ssh", only use "ssh". (I.e., Only verify against
-        # the last scheme.)
-        origin_protocol = origin_protocol.rsplit("+", 1)[-1]
-
-        # Determine if our origin is a secure origin by looking through our
-        # hardcoded list of secure origins, as well as any additional ones
-        # configured on this PackageFinder instance.
-        for secure_origin in self.iter_secure_origins():
-            secure_protocol, secure_host, secure_port = secure_origin
-            if origin_protocol != secure_protocol and secure_protocol != "*":
-                continue
-
-            try:
-                addr = ipaddress.ip_address(origin_host or "")
-                network = ipaddress.ip_network(secure_host)
-            except ValueError:
-                # We don't have both a valid address or a valid network, so
-                # we'll check this origin against hostnames.
-                if (
-                    origin_host
-                    and origin_host.lower() != secure_host.lower()
-                    and secure_host != "*"
-                ):
-                    continue
-            else:
-                # We have a valid address and network, so see if the address
-                # is contained within the network.
-                if addr not in network:
-                    continue
-
-            # Check to see if the port matches.
-            if (
-                origin_port != secure_port
-                and secure_port != "*"
-                and secure_port is not None
-            ):
-                continue
-
-            # If we've gotten here, then this origin matches the current
-            # secure origin and we should return True
-            return True
-
-        # If we've gotten to this point, then the origin isn't secure and we
-        # will not accept it as a valid location to search. We will however
-        # log a warning that we are ignoring it.
-        logger.warning(
-            "The repository located at %s is not a trusted or secure host and "
-            "is being ignored. If this repository is available via HTTPS we "
-            "recommend you use HTTPS instead, otherwise you may silence "
-            "this warning and allow it anyway with '--trusted-host %s'.",
-            origin_host,
-            origin_host,
-        )
-
-        return False
+        pass
 
     def request(self, method: str, url: str, *args: Any, **kwargs: Any) -> Response:  # type: ignore[override]
         # Allow setting a default timeout on a session

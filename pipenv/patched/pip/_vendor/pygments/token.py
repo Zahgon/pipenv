@@ -88,7 +88,7 @@ def is_token_subtype(ttype, other):
 
     exists for backwards compatibility. use ``ttype in other`` now.
     """
-    return ttype in other
+    pass
 
 
 def string_to_tokentype(s):

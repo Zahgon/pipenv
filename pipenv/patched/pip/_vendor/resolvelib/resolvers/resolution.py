@@ -88,10 +88,7 @@ class Resolution(Generic[RT, CT, KT]):
 
     @property
     def state(self) -> State[RT, CT, KT]:
-        try:
-            return self._states[-1]
-        except IndexError as e:
-            raise AttributeError("state") from e
+        pass
 
     def _push_new_state(self) -> None:
         """Push a new state into history.
@@ -179,19 +176,7 @@ class Resolution(Generic[RT, CT, KT]):
             )
 
     def _get_preference(self, name: KT) -> Preference:
-        return self._p.get_preference(
-            identifier=name,
-            resolutions=self.state.mapping,
-            candidates=IteratorMapping(
-                self.state.criteria,
-                operator.attrgetter("candidates"),
-            ),
-            information=IteratorMapping(
-                self.state.criteria,
-                operator.attrgetter("information"),
-            ),
-            backtrack_causes=self.state.backtrack_causes,
-        )
+        pass
 
     def _is_current_pin_satisfying(
         self, name: KT, criterion: Criterion[RT, CT]

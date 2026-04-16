@@ -27,11 +27,7 @@ def get_editable_location(distribution: Distribution) -> str | None:
     :param distribution: Distribution to check
     :returns: Path to editable source location, or None if package is not editable
     """
-    if (direct_url := get_direct_url(distribution)) and direct_url.is_editable():
-        return url_to_path(direct_url.url)
-    if egg_link := find_egg_link(distribution.metadata["Name"]):
-        return read_egg_link_location(egg_link)
-    return None
+    pass
 
 
 def url_to_path(url: str) -> str:

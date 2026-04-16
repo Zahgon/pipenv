@@ -164,21 +164,7 @@ class pxssh (spawn):
     def levenshtein_distance(self, a, b):
         '''This calculates the Levenshtein distance between a and b.
         '''
-
-        n, m = len(a), len(b)
-        if n > m:
-            a,b = b,a
-            n,m = m,n
-        current = range(n+1)
-        for i in range(1,m+1):
-            previous, current = current, [i]+[0]*n
-            for j in range(1,n+1):
-                add, delete = previous[j]+1, current[j-1]+1
-                change = previous[j-1]
-                if a[j-1] != b[i-1]:
-                    change = change + 1
-                current[j] = min(add, delete, change)
-        return current[n]
+        pass
 
     def try_read_prompt(self, timeout_multiplier):
         '''This facilitates using communication timeouts to perform
@@ -187,30 +173,7 @@ class pxssh (spawn):
         should be read almost immediately. Worst case performance for this
         method is timeout_multiplier * 3 seconds.
         '''
-
-        # maximum time allowed to read the first response
-        first_char_timeout = timeout_multiplier * 0.5
-
-        # maximum time allowed between subsequent characters
-        inter_char_timeout = timeout_multiplier * 0.1
-
-        # maximum time for reading the entire prompt
-        total_timeout = timeout_multiplier * 3.0
-
-        prompt = self.string_type()
-        begin = time.time()
-        expired = 0.0
-        timeout = first_char_timeout
-
-        while expired < total_timeout:
-            try:
-                prompt += self.read_nonblocking(size=1, timeout=timeout)
-                expired = time.time() - begin # updated total time expired
-                timeout = inter_char_timeout
-            except TIMEOUT:
-                break
-
-        return prompt
+        pass
 
     def sync_original_prompt (self, sync_multiplier=1.0):
         '''This attempts to find the prompt. Basically, press enter and record
@@ -220,35 +183,7 @@ class pxssh (spawn):
         can take 12 seconds. Low latency connections are more likely to fail
         with a low sync_multiplier. Best case sync time gets worse with a
         high sync multiplier (500 ms with default). '''
-
-        # All of these timing pace values are magic.
-        # I came up with these based on what seemed reliable for
-        # connecting to a heavily loaded machine I have.
-        self.sendline()
-        time.sleep(0.1)
-
-        try:
-            # Clear the buffer before getting the prompt.
-            self.try_read_prompt(sync_multiplier)
-        except TIMEOUT:
-            pass
-
-        self.sendline()
-        x = self.try_read_prompt(sync_multiplier)
-
-        self.sendline()
-        a = self.try_read_prompt(sync_multiplier)
-
-        self.sendline()
-        b = self.try_read_prompt(sync_multiplier)
-
-        ld = self.levenshtein_distance(a,b)
-        len_a = len(a)
-        if len_a == 0:
-            return False
-        if float(ld)/len_a < 0.4:
-            return True
-        return False
+        pass
 
     ### TODO: This is getting messy and I'm pretty sure this isn't perfect.
     ### TODO: I need to draw a flow chart for this.
@@ -307,182 +242,14 @@ class pxssh (spawn):
         namespaces. For example ```cmd="ip netns exec vlan2 ssh"``` to execute the ssh in
         network namespace named ```vlan```.
         '''
-
-        session_regex_array = ["(?i)are you sure you want to continue connecting", original_prompt, password_regex, "(?i)permission denied", "(?i)terminal type", TIMEOUT]
-        session_init_regex_array = []
-        session_init_regex_array.extend(session_regex_array)
-        session_init_regex_array.extend(["(?i)connection closed by remote host", EOF])
-
-        ssh_options = ''.join([" -o '%s=%s'" % (o, v) for (o, v) in self.options.items()])
-        if quiet:
-            ssh_options = ssh_options + ' -q'
-        if not check_local_ip:
-            ssh_options = ssh_options + " -o'NoHostAuthenticationForLocalhost=yes'"
-        if self.force_password:
-            ssh_options = ssh_options + ' ' + self.SSH_OPTS
-        if ssh_config is not None:
-            if spawn_local_ssh and not os.path.isfile(ssh_config):
-                raise ExceptionPxssh('SSH config does not exist or is not a file.')
-            ssh_options = ssh_options + ' -F ' + ssh_config
-        if port is not None:
-            ssh_options = ssh_options + ' -p %s'%(str(port))
-        if ssh_key is not None:
-            # Allow forwarding our SSH key to the current session
-            if ssh_key==True:
-                ssh_options = ssh_options + ' -A'
-            else:
-                if spawn_local_ssh and not os.path.isfile(ssh_key):
-                    raise ExceptionPxssh('private ssh key does not exist or is not a file.')
-                ssh_options = ssh_options + ' -i %s' % (ssh_key)
-
-        # SSH tunnels, make sure you know what you're putting into the lists
-        # under each heading. Do not expect these to open 100% of the time,
-        # The port you're requesting might be bound.
-        #
-        # The structure should be like this:
-        # { 'local': ['2424:localhost:22'],  # Local SSH tunnels
-        # 'remote': ['2525:localhost:22'],   # Remote SSH tunnels
-        # 'dynamic': [8888] } # Dynamic/SOCKS tunnels
-        if ssh_tunnels!={} and isinstance({},type(ssh_tunnels)):
-            tunnel_types = {
-                'local':'L',
-                'remote':'R',
-                'dynamic':'D'
-            }
-            for tunnel_type in tunnel_types:
-                cmd_type = tunnel_types[tunnel_type]
-                if tunnel_type in ssh_tunnels:
-                    tunnels = ssh_tunnels[tunnel_type]
-                    for tunnel in tunnels:
-                        if spawn_local_ssh==False:
-                            tunnel = quote(str(tunnel))
-                        ssh_options = ssh_options + ' -' + cmd_type + ' ' + str(tunnel)
-
-        if username is not None:
-            ssh_options = ssh_options + ' -l ' + username
-        elif ssh_config is None:
-            raise TypeError('login() needs either a username or an ssh_config')
-        else:  # make sure ssh_config has an entry for the server with a username
-            with open(ssh_config, 'rt') as f:
-                lines = [l.strip() for l in f.readlines()]
-
-            server_regex = r'^Host\s+%s\s*$' % server
-            user_regex = r'^User\s+\w+\s*$'
-            config_has_server = False
-            server_has_username = False
-            for line in lines:
-                if not config_has_server and re.match(server_regex, line, re.IGNORECASE):
-                    config_has_server = True
-                elif config_has_server and 'hostname' in line.lower():
-                    pass
-                elif config_has_server and 'host' in line.lower():
-                    server_has_username = False  # insurance
-                    break  # we have left the relevant section
-                elif config_has_server and re.match(user_regex, line, re.IGNORECASE):
-                    server_has_username = True
-                    break
-
-            if lines:
-                del line
-
-            del lines
-
-            if not config_has_server:
-                raise TypeError('login() ssh_config has no Host entry for %s' % server)
-            elif not server_has_username:
-                raise TypeError('login() ssh_config has no user entry for %s' % server)
-
-        cmd += " %s %s" % (ssh_options, server)
-        if self.debug_command_string:
-            return(cmd)
-
-        # Are we asking for a local ssh command or to spawn one in another session?
-        if spawn_local_ssh:
-            spawn._spawn(self, cmd)
-        else:
-            self.sendline(cmd)
-
-        # This does not distinguish between a remote server 'password' prompt
-        # and a local ssh 'passphrase' prompt (for unlocking a private key).
-        i = self.expect(session_init_regex_array, timeout=login_timeout)
-
-        # First phase
-        if i==0:
-            # New certificate -- always accept it.
-            # This is what you get if SSH does not have the remote host's
-            # public key stored in the 'known_hosts' cache.
-            self.sendline("yes")
-            i = self.expect(session_regex_array)
-        if i==2: # password or passphrase
-            self.sendline(password)
-            i = self.expect(session_regex_array)
-        if i==4:
-            self.sendline(terminal_type)
-            i = self.expect(session_regex_array)
-        if i==7:
-            self.close()
-            raise ExceptionPxssh('Could not establish connection to host')
-
-        # Second phase
-        if i==0:
-            # This is weird. This should not happen twice in a row.
-            self.close()
-            raise ExceptionPxssh('Weird error. Got "are you sure" prompt twice.')
-        elif i==1: # can occur if you have a public key pair set to authenticate.
-            ### TODO: May NOT be OK if expect() got tricked and matched a false prompt.
-            pass
-        elif i==2: # password prompt again
-            # For incorrect passwords, some ssh servers will
-            # ask for the password again, others return 'denied' right away.
-            # If we get the password prompt again then this means
-            # we didn't get the password right the first time.
-            self.close()
-            raise ExceptionPxssh('password refused')
-        elif i==3: # permission denied -- password was bad.
-            self.close()
-            raise ExceptionPxssh('permission denied')
-        elif i==4: # terminal type again? WTF?
-            self.close()
-            raise ExceptionPxssh('Weird error. Got "terminal type" prompt twice.')
-        elif i==5: # Timeout
-            #This is tricky... I presume that we are at the command-line prompt.
-            #It may be that the shell prompt was so weird that we couldn't match
-            #it. Or it may be that we couldn't log in for some other reason. I
-            #can't be sure, but it's safe to guess that we did login because if
-            #I presume wrong and we are not logged in then this should be caught
-            #later when I try to set the shell prompt.
-            pass
-        elif i==6: # Connection closed by remote host
-            self.close()
-            raise ExceptionPxssh('connection closed')
-        else: # Unexpected
-            self.close()
-            raise ExceptionPxssh('unexpected login response')
-        if sync_original_prompt:
-            if not self.sync_original_prompt(sync_multiplier):
-                self.close()
-                raise ExceptionPxssh('could not synchronize with original prompt')
-        # We appear to be in.
-        # set shell prompt to something unique.
-        if auto_prompt_reset:
-            if not self.set_unique_prompt():
-                self.close()
-                raise ExceptionPxssh('could not set shell prompt '
-                                     '(received: %r, expected: %r).' % (
-                                         self.before, self.PROMPT,))
-        return True
+        pass
 
     def logout (self):
         '''Sends exit to the remote shell.
 
         If there are stopped jobs then this automatically sends exit twice.
         '''
-        self.sendline("exit")
-        index = self.expect([EOF, "(?i)there are stopped jobs"])
-        if index==1:
-            self.sendline("exit")
-            self.expect(EOF)
-        self.close()
+        pass
 
     def prompt(self, timeout=-1):
         '''Match the next shell prompt.
@@ -500,13 +267,7 @@ class pxssh (spawn):
         :return: True if the shell prompt was matched, False if the timeout was
                  reached.
         '''
-
-        if timeout == -1:
-            timeout = self.timeout
-        i = self.expect([self.PROMPT, TIMEOUT], timeout=timeout)
-        if i==1:
-            return False
-        return True
+        pass
 
     def set_unique_prompt(self):
         '''This sets the remote prompt to something more unique than ``#`` or ``$``.
@@ -523,18 +284,6 @@ class pxssh (spawn):
         :attr:`PROMPT` attribute to a regular expression. After that, the
         :meth:`prompt` method will try to match your prompt pattern.
         '''
-
-        self.sendline("unset PROMPT_COMMAND")
-        self.sendline(self.PROMPT_SET_SH) # sh-style
-        i = self.expect ([TIMEOUT, self.PROMPT], timeout=10)
-        if i == 0: # csh-style
-            self.sendline(self.PROMPT_SET_CSH)
-            i = self.expect([TIMEOUT, self.PROMPT], timeout=10)
-            if i == 0: # zsh-style
-                self.sendline(self.PROMPT_SET_ZSH)
-                i = self.expect([TIMEOUT, self.PROMPT], timeout=10)
-                if i == 0:
-                    return False
-        return True
+        pass
 
 # vi:ts=4:sw=4:expandtab:ft=python:

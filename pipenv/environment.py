@@ -84,19 +84,7 @@ class Environment:
 
     def safe_import(self, name: str) -> ModuleType:
         """Helper utility for reimporting previously imported modules while inside the env"""
-        module = None
-        if name not in self._modules:
-            self._modules[name] = importlib.import_module(name)
-        module = self._modules[name]
-        if not module:
-            dist = next(
-                iter(dist for dist in self.base_working_set if dist.project_name == name),
-                None,
-            )
-            if dist:
-                dist.activate()
-            module = importlib.import_module(name)
-        return module
+        pass
 
     @cached_property
     def python_version(self) -> str | None:
@@ -111,44 +99,14 @@ class Environment:
 
     @property
     def python_info(self) -> dict[str, str]:
-        include_dir = self.prefix / "include"
-        if not include_dir.exists():
-            include_dirs = self.get_include_path()
-            if include_dirs:
-                include_path = include_dirs.get(
-                    "include", include_dirs.get("platinclude")
-                )
-                if not include_path:
-                    return {}
-                include_dir = Path(include_path)
-        python_path = next(iter(list(include_dir.iterdir())), None)
-        if python_path and python_path.name.startswith("python"):
-            python_version = python_path.name.replace("python", "")
-            py_version_short, abiflags = python_version[:3], python_version[3:]
-            return {"py_version_short": py_version_short, "abiflags": abiflags}
-        return {}
+        pass
 
     def _replace_parent_version(self, path: str, replace_version: str) -> str:
-        path_obj = Path(path)
-        if not path_obj.exists():
-            parent = path_obj.parent
-            grandparent = parent.parent
-            leaf = f"{parent.name}/{path_obj.name}"
-            leaf = leaf.replace(
-                replace_version,
-                self.python_info.get("py_version_short", get_python_version()),
-            )
-            return str(grandparent / leaf)
-        return str(path_obj)
+        pass
 
     @cached_property
     def install_scheme(self):
-        if "venv" in get_scheme_names():
-            return "venv"
-        elif os.name == "nt":
-            return "nt"
-        else:
-            return "posix_prefix"
+        pass
 
     @cached_property
     def base_paths(self) -> dict[str, str]:
@@ -174,73 +132,12 @@ class Environment:
         'scripts': '/home/hawk/.virtualenvs/pipenv-MfOPs1lW/bin',
         'stdlib': '/home/hawk/.pyenv/versions/3.7.1/lib/python3.7'}
         """
-
-        prefix = Path(self.prefix)
-        paths = {}
-        if self._base_paths:
-            paths = self._base_paths.copy()
-        else:
-            try:
-                paths = self.get_paths()
-            except Exception:
-                paths = get_paths(
-                    self.install_scheme,
-                    vars={
-                        "base": prefix,
-                        "platbase": prefix,
-                    },
-                )
-                current_version = get_python_version()
-                try:
-                    for k in list(paths.keys()):
-                        if not os.path.exists(paths[k]):
-                            paths[k] = self._replace_parent_version(
-                                paths[k], current_version
-                            )
-                except OSError:
-                    # Sometimes virtualenvs are made using virtualenv interpreters and there is no
-                    # include directory, which will cause this approach to fail. This failsafe
-                    # will make sure we fall back to the shell execution to find the real include path
-                    paths = self.get_include_path()
-                    paths.update(self.get_lib_paths())
-                    paths["scripts"] = self.script_basedir
-        if not paths:
-            paths = get_paths(
-                self.install_scheme,
-                vars={
-                    "base": prefix,
-                    "platbase": prefix,
-                },
-            )
-        if not os.path.exists(paths["purelib"]) and not os.path.exists(paths["platlib"]):
-            lib_paths = self.get_lib_paths()
-            paths.update(lib_paths)
-        paths["PATH"] = str(paths["scripts"]) + os.pathsep + os.defpath
-        if "prefix" not in paths:
-            paths["prefix"] = prefix
-        purelib = paths["purelib"] = Path(paths["purelib"])
-        platlib = paths["platlib"] = Path(paths["platlib"])
-        if purelib == platlib:
-            lib_dirs = [purelib]
-        else:
-            lib_dirs = [purelib, platlib]
-        paths["libdir"] = purelib
-        paths["PYTHONPATH"] = os.pathsep.join(["", ".", str(purelib), str(platlib)])
-        paths["libdirs"] = lib_dirs
-        return paths
+        pass
 
     @cached_property
     def script_basedir(self) -> str:
         """Path to the environment scripts dir"""
-        prefix = Path(self.prefix)
-        paths = get_paths(
-            self.install_scheme,
-            vars={
-                "base": prefix,
-                "platbase": prefix,
-            },
-        )
-        return paths["scripts"]
+        pass
 
     @property
     def python(self) -> str:
@@ -260,20 +157,7 @@ class Environment:
         :return: The :data:`sys.path` from the environment
         :rtype: list
         """
-        import json
-
-        current_executable = Path(sys.executable).as_posix()
-        if not self.python or self.python == current_executable:
-            return sys.path
-        elif any([sys.prefix == self.prefix, not self.is_venv]):
-            return sys.path
-
-        try:
-            path = pipenv.utils.shell.load_path(self.python)
-        except json.decoder.JSONDecodeError:
-            path = sys.path
-
-        return path
+        pass
 
     def build_command(
         self,
@@ -363,50 +247,7 @@ class Environment:
         :return: The python include path for the environment
         :rtype: Dict[str, str]
         """
-        py_command = self.build_command(python_lib=True)
-        command = [self.python, "-c", py_command]
-        c = subprocess_run(command)
-        paths = None
-        if c.returncode == 0:
-            paths = json.loads(c.stdout)
-            if "purelib" in paths:
-                paths["libdir"] = paths["purelib"] = Path(paths["purelib"])
-            for key in ("platlib", "platstdlib", "stdlib"):
-                if key in paths:
-                    paths[key] = Path(paths[key])
-            return paths
-        else:
-            console.print(f"Failed to load paths: {c.stderr}", style="yellow")
-            console.print(f"Output: {c.stdout}", style="yellow")
-        if not paths:
-            if not self.prefix.joinpath("lib").exists():
-                return {}
-            stdlib_path = next(
-                iter(
-                    [
-                        p
-                        for p in self.prefix.joinpath("lib").iterdir()
-                        if p.name.startswith("python")
-                    ]
-                ),
-                None,
-            )
-            lib_path = None
-            if stdlib_path:
-                lib_path = next(
-                    iter(
-                        [
-                            p.as_posix()
-                            for p in stdlib_path.iterdir()
-                            if p.name == "site-packages"
-                        ]
-                    )
-                )
-                paths = {"stdlib": stdlib_path.as_posix()}
-                if lib_path:
-                    paths["purelib"] = lib_path
-                return paths
-        return {}
+        pass
 
     def get_include_path(self) -> dict[str, str] | None:
         """Get the include path for the environment
@@ -414,19 +255,7 @@ class Environment:
         :return: The python include path for the environment
         :rtype: Dict[str, str]
         """
-        py_command = self.build_command(python_inc=True)
-        command = [self.python, "-c", py_command]
-        c = subprocess_run(command)
-        if c.returncode == 0:
-            paths = json.loads(c.stdout)
-            for key in ("include", "platinclude"):
-                if key in paths:
-                    paths[key] = Path(paths[key])
-            return paths
-        else:
-            console.print(f"Failed to load paths: {c.stderr}", style="yellow")
-            console.print(f"Output: {c.stdout}", style="yellow")
-        return None
+        pass
 
     @cached_property
     def sys_prefix(self) -> str:
@@ -436,56 +265,26 @@ class Environment:
         :return: The python prefix inside the environment
         :rtype: :data:`sys.prefix`
         """
-
-        command = [self.python, "-c", "import sys; print(sys.prefix)"]
-        c = subprocess_run(command)
-        sys_prefix = Path(c.stdout.strip()).as_posix()
-        return sys_prefix
+        pass
 
     @cached_property
     def paths(self) -> dict[str, str]:
-        paths = {}
-        with temp_environ(), temp_path():
-            os.environ["PYTHONIOENCODING"] = "utf-8"
-            os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
-            paths = self.base_paths
-            os.environ["PATH"] = paths["PATH"]
-            os.environ["PYTHONPATH"] = paths["PYTHONPATH"]
-            if "headers" not in paths:
-                paths["headers"] = paths["include"]
-        return paths
+        pass
 
     @property
     def scripts_dir(self) -> str:
-        return self.paths["scripts"]
+        pass
 
     @property
     def libdir(self) -> str:
-        purelib = self.paths.get("purelib", None)
-        if purelib and os.path.exists(purelib):
-            return "purelib", purelib
-        return "platlib", self.paths["platlib"]
+        pass
 
     def expand_egg_links(self) -> None:
         """
         Expand paths specified in egg-link files to prevent pip errors during
         reinstall
         """
-        prefixes = [
-            Path(prefix)
-            for prefix in self.base_paths["libdirs"].split(os.pathsep)
-            if is_in_path(prefix, self.prefix.as_posix())
-        ]
-        for loc in prefixes:
-            if not loc.exists():
-                continue
-            for pth in loc.iterdir():
-                if pth.suffix != ".egg-link":
-                    continue
-                contents = [
-                    normalize_path(line.strip()) for line in pth.read_text().splitlines()
-                ]
-                pth.write_text("\n".join(contents))
+        pass
 
     def get_distributions(self) -> Generator[importlib_metadata.Distribution, None, None]:
         """
@@ -723,8 +522,7 @@ class Environment:
         :return: Whether the supplied package is installed in the environment
         :rtype: bool
         """
-
-        return any(d for d in self.get_distributions() if d._normalized_name == pkgname)
+        pass
 
     def is_satisfied(self, req: InstallRequirement):
         match = next(
@@ -767,13 +565,7 @@ class Environment:
 
     def run_activate_this(self):
         """Runs the environment's inline activation script"""
-        if self.is_venv:
-            activate_this = os.path.join(self.scripts_dir, "activate_this.py")
-            if not os.path.isfile(activate_this):
-                raise OSError(f"No such file: {activate_this!s}")
-            with open(activate_this) as f:
-                code = compile(f.read(), activate_this, "exec")
-                exec(code, {"__file__": activate_this})
+        pass
 
     @contextlib.contextmanager
     def activated(self):

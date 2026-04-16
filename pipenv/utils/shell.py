@@ -90,15 +90,7 @@ def looks_like_dir(path):
 
 
 def load_path(python):
-    import json
-    from pathlib import Path
-
-    python = Path(python).as_posix()
-    c = subprocess_run([python, "-c", "import json, sys; print(json.dumps(sys.path))"])
-    if c.returncode == 0:
-        return json.loads(c.stdout.strip())
-    else:
-        return []
+    pass
 
 
 def path_to_url(path):
@@ -212,9 +204,7 @@ def temp_environ():
 
 
 def escape_cmd(cmd):
-    if any(special_char in cmd for special_char in ["<", ">", "&", ".", "^", "|", "?"]):
-        cmd = f'"{cmd}"'
-    return cmd
+    pass
 
 
 def safe_expandvars(value):
@@ -267,23 +257,12 @@ def expand_url_credentials(url):
     def _expand_only(s):
         """Expand env-var references without URL-encoding."""
         def _sub(m):
-            var_name = m.group(1) or m.group(2)
-            value = os.environ.get(var_name)
-            if value is None:
-                return m.group(0)  # var not set — leave token unchanged
-            return value
+            pass
 
         return _env_var_re.sub(_sub, s)
 
     def _expand_and_encode(s):
-        def _sub(m):
-            var_name = m.group(1) or m.group(2)
-            value = os.environ.get(var_name)
-            if value is None:
-                return m.group(0)  # var not set — leave token unchanged
-            return quote(value, safe="")  # URL-encode special chars
-
-        return _env_var_re.sub(_sub, s)
+        pass
 
     # Split on the LAST '@' so any un-encoded '@' in unexpanded tokens
     # doesn't confuse the split.
@@ -472,23 +451,7 @@ def is_python_command(line):
     :returns: Whether the line is a python lookup
     :rtype: bool
     """
-
-    if not isinstance(line, str):
-        raise TypeError(f"Not a valid command to check: {line!r}")
-
-    from pipenv.vendor.pythonfinder.utils import PYTHON_IMPLEMENTATIONS
-
-    is_version = re.match(r"\d+(\.\d+)*", line)
-    if (
-        line.startswith("python")
-        or is_version
-        or any(line.startswith(v) for v in PYTHON_IMPLEMENTATIONS)
-    ):
-        return True
-    # we are less sure about this but we can guess
-    if line.startswith("py"):
-        return True
-    return False
+    pass
 
 
 @contextmanager

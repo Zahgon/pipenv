@@ -26,8 +26,7 @@ class SourceDistribution(AbstractDistribution):
     @property
     def build_tracker_id(self) -> str | None:
         """Identify this requirement uniquely by its link."""
-        assert self.req.link
-        return self.req.link.url_without_fragment
+        pass
 
     def get_metadata_distribution(self) -> BaseDistribution:
         return self.req.get_dist()

@@ -203,121 +203,33 @@ class Entry:
 
     def _build_requirement(self) -> PackageRequirement:
         """Construct a PackageRequirement from entry data."""
-        # Extract VCS information
-        vcs_info = self._extract_vcs_info()
-        source = PackageSource(
-            index=self.resolver.index_lookup.get(self.name), **vcs_info
-        )
-
-        # Clean and normalize version
-        version = self._clean_version(self.entry_dict.get("version"))
-
-        # Build the core requirement
-        return PackageRequirement(
-            name=self.name,
-            version=version,
-            extras=set(self.entry_dict.get("extras", [])),
-            markers=self._clean_markers(),
-            hashes=set(self.entry_dict.get("hashes", [])),
-            source=source,
-        )
+        pass
 
     def _extract_vcs_info(self) -> Dict[str, Optional[str]]:
         """Extract VCS information from entry dict and lockfile."""
-        vcs_info = {}
-        vcs_keys = {"git", "hg", "svn", "bzr"}
-
-        # Check both entry_dict and lockfile_dict for VCS info
-        for key in vcs_keys:
-            if key in self.entry_dict:
-                vcs_info["vcs"] = key
-                vcs_info["url"] = self.entry_dict[key]
-                vcs_info["ref"] = self.entry_dict.get("ref")
-                vcs_info["subdirectory"] = self.entry_dict.get("subdirectory")
-                break
-
-        return vcs_info
+        pass
 
     @staticmethod
     def _clean_version(version: Optional[str]) -> Optional[str]:
         """Clean and normalize version strings."""
-        if not version:
-            return None
-        if version.strip().lower() in {"any", "<any>", "*"}:
-            return "*"
-        if not any(
-            version.startswith(op) for op in ("==", ">=", "<=", "~=", "!=", ">", "<")
-        ):
-            version = f"=={version}"
-        return version
+        pass
 
     def _clean_markers(self) -> Optional[str]:
         """Clean and normalize marker strings."""
-        markers = []
-        marker_keys = {
-            "sys_platform",
-            "python_version",
-            "os_name",
-            "platform_machine",
-            "markers",
-        }
-
-        for key in marker_keys:
-            if key in self.entry_dict:
-                value = self.entry_dict.pop(key)
-                if value and key != "markers":
-                    markers.append(f"{key} {value}")
-                elif value:  # key == "markers"
-                    markers.append(value)
-
-        return " and ".join(markers) if markers else None
+        pass
 
     def _get_lockfile_section(self) -> str:
         """Get the appropriate lockfile section based on category."""
-        from pipenv.utils.dependencies import get_lockfile_section_using_pipfile_category
-
-        return get_lockfile_section_using_pipfile_category(self.category)
+        pass
 
     def _get_pipfile_content(self) -> Dict[str, Any]:
         """Get and normalize pipfile content."""
-        from pipenv.utils.toml import tomlkit_value_to_python
-
-        return tomlkit_value_to_python(self.project.parsed_pipfile.get(self.category, {}))
+        pass
 
     @property
     def get_cleaned_dict(self) -> Dict[str, Any]:
         """Create a cleaned dictionary representation of the entry."""
-        cleaned = {
-            "name": self.name,
-            "version": self.requirement.version,
-            "extras": (
-                sorted(self.requirement.extras) if self.requirement.extras else None
-            ),
-            "markers": self.requirement.markers,
-            "hashes": (
-                sorted(self.requirement.hashes) if self.requirement.hashes else None
-            ),
-            "subdirectory": self.requirement.source.subdirectory,
-            "editable": self.entry_dict.get("editable", None),
-            "path": self.entry_dict.get("path"),
-            "file": self.entry_dict.get("file"),
-        }
-
-        # Add index if present
-        if self.requirement.source.index:
-            cleaned["index"] = self.requirement.source.index
-
-        # Add VCS information if present
-        if self.requirement.source.is_vcs:
-            cleaned[self.requirement.source.vcs] = self.requirement.source.url
-            if self.entry_dict.get("ref"):
-                cleaned["ref"] = self.entry_dict["ref"]
-            elif self.requirement.source.ref:
-                cleaned["ref"] = self.requirement.source.ref
-            cleaned.pop("version", None)  # Remove version for VCS entries
-
-        # Clean up None values
-        return {k: v for k, v in cleaned.items() if v is not None}
+        pass
 
     def validate_constraints(self) -> bool:
         """Validate that all constraints are satisfied."""
@@ -530,10 +442,7 @@ def _apply_python_version_override():
     _orig = pip_markers.default_environment
 
     def _patched():
-        env = _orig()
-        env["python_version"] = python_version
-        env["python_full_version"] = python_full_version
-        return env
+        pass
 
     pip_markers.default_environment = _patched
 

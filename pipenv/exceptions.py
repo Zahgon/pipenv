@@ -51,13 +51,7 @@ class _FileError(_ClickException):
 
 def unstyle(text: str) -> str:
     """Remove all styles from the given text."""
-    try:
-        styled_text = Text.from_markup(text)
-        stripped_text = styled_text.strip_styles()
-        return stripped_text.plain
-    except AttributeError:
-        # Fallback if the expected methods are not available
-        return str(text)
+    pass
 
 
 KnownException = namedtuple(
@@ -77,32 +71,7 @@ KNOWN_EXCEPTIONS = [
 
 
 def handle_exception(exc_type, exception, traceback, hook=sys.excepthook):
-    from pipenv import environments
-
-    is_verbose = environments.Setting().is_verbose()
-
-    if is_verbose or not issubclass(exc_type, _ClickException):
-        hook(exc_type, exception, traceback)
-    elif issubclass(exc_type, PipenvException):
-        # For PipenvException and subclasses (ResolutionFailure, etc.),
-        # just show the clean error message without any traceback.
-        # The exception's show() method provides user-friendly output.
-        exception.show()
-    else:
-        # For other ClickExceptions, show a minimal traceback
-        tb = format_tb(traceback, limit=-6)
-        lines = itertools.chain.from_iterable([frame.splitlines() for frame in tb])
-        formatted_lines = []
-        for line in lines:
-            line = line.strip("'").strip('"').strip("\n").strip()
-            if not line.startswith("File"):
-                line = f"      {line}"
-            else:
-                line = f"  {line}"
-            line = f"[{exception.__class__.__name__!s}]: {line}"
-            formatted_lines.append(line)
-        err.print("\n".join(formatted_lines))
-        exception.show()
+    pass
 
 
 sys.excepthook = handle_exception

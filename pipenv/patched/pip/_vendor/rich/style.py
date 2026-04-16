@@ -149,7 +149,7 @@ class Style:
         self._style_definition: Optional[str] = None
 
         def _make_color(color: Union[Color, str]) -> Color:
-            return color if isinstance(color, Color) else Color.parse(color)
+            pass
 
         self._color = None if color is None else _make_color(color)
         self._bgcolor = None if bgcolor is None else _make_color(bgcolor)
@@ -264,9 +264,7 @@ class Style:
         Returns:
             Style: A Style with meta information attached.
         """
-        meta = {} if meta is None else meta
-        meta.update({f"@{key}": value for key, value in handlers.items()})
-        return cls.from_meta(meta)
+        pass
 
     bold = _Bit(0)
     dim = _Bit(1)
@@ -285,7 +283,7 @@ class Style:
     @property
     def link_id(self) -> str:
         """Get a link id, used in ansi code for links."""
-        return self._link_id
+        pass
 
     def __str__(self) -> str:
         """Re-generate style definition from attributes."""
@@ -443,27 +441,27 @@ class Style:
     @property
     def color(self) -> Optional[Color]:
         """The foreground color or None if it is not set."""
-        return self._color
+        pass
 
     @property
     def bgcolor(self) -> Optional[Color]:
         """The background color or None if it is not set."""
-        return self._bgcolor
+        pass
 
     @property
     def link(self) -> Optional[str]:
         """Link text, if set."""
-        return self._link
+        pass
 
     @property
     def transparent_background(self) -> bool:
         """Check if the style specified a transparent background."""
-        return self.bgcolor is None or self.bgcolor.is_default
+        pass
 
     @property
     def background_style(self) -> "Style":
         """A Style with background only."""
-        return Style(bgcolor=self.bgcolor)
+        pass
 
     @property
     def meta(self) -> Dict[str, Any]:
@@ -473,21 +471,7 @@ class Style:
     @property
     def without_color(self) -> "Style":
         """Get a copy of the style with color removed."""
-        if self._null:
-            return NULL_STYLE
-        style: Style = self.__new__(Style)
-        style._ansi = None
-        style._style_definition = None
-        style._color = None
-        style._bgcolor = None
-        style._attributes = self._attributes
-        style._set_attributes = self._set_attributes
-        style._link = self._link
-        style._link_id = f"{randint(0, 999999)}" if self._link else ""
-        style._null = False
-        style._meta = None
-        style._hash = None
-        return style
+        pass
 
     @classmethod
     @lru_cache(maxsize=4096)
@@ -648,21 +632,7 @@ class Style:
         Returns:
             Style: New style object.
         """
-        if self._null:
-            return NULL_STYLE
-        style: Style = self.__new__(Style)
-        style._ansi = self._ansi
-        style._style_definition = self._style_definition
-        style._color = self._color
-        style._bgcolor = self._bgcolor
-        style._attributes = self._attributes
-        style._set_attributes = self._set_attributes
-        style._link = None
-        style._link_id = ""
-        style._hash = None
-        style._null = False
-        style._meta = None
-        return style
+        pass
 
     def update_link(self, link: Optional[str] = None) -> "Style":
         """Get a copy with a different value for link.
@@ -727,28 +697,7 @@ class Style:
 
     @lru_cache(maxsize=1024)
     def _add(self, style: Optional["Style"]) -> "Style":
-        if style is None or style._null:
-            return self
-        if self._null:
-            return style
-        new_style: Style = self.__new__(Style)
-        new_style._ansi = None
-        new_style._style_definition = None
-        new_style._color = style._color or self._color
-        new_style._bgcolor = style._bgcolor or self._bgcolor
-        new_style._attributes = (self._attributes & ~style._set_attributes) | (
-            style._attributes & style._set_attributes
-        )
-        new_style._set_attributes = self._set_attributes | style._set_attributes
-        new_style._link = style._link or self._link
-        new_style._link_id = style._link_id or self._link_id
-        new_style._null = style._null
-        if self._meta and style._meta:
-            new_style._meta = dumps({**self.meta, **style.meta})
-        else:
-            new_style._meta = self._meta or style._meta
-        new_style._hash = None
-        return new_style
+        pass
 
     def __add__(self, style: Optional["Style"]) -> "Style":
         combined_style = self._add(style)
@@ -772,7 +721,7 @@ class StyleStack:
     @property
     def current(self) -> Style:
         """Get the Style at the top of the stack."""
-        return self._stack[-1]
+        pass
 
     def push(self, style: Style) -> None:
         """Push a new style on to the stack.

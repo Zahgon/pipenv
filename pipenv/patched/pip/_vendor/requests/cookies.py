@@ -38,42 +38,27 @@ class MockRequest:
         self.type = urlparse(self._r.url).scheme
 
     def get_type(self):
-        return self.type
+        pass
 
     def get_host(self):
         return urlparse(self._r.url).netloc
 
     def get_origin_req_host(self):
-        return self.get_host()
+        pass
 
     def get_full_url(self):
         # Only return the response's URL if the user hadn't set the Host
         # header
-        if not self._r.headers.get("Host"):
-            return self._r.url
-        # If they did set it, retrieve it and reconstruct the expected domain
-        host = to_native_string(self._r.headers["Host"], encoding="utf-8")
-        parsed = urlparse(self._r.url)
-        # Reconstruct the URL as we expect it
-        return urlunparse(
-            [
-                parsed.scheme,
-                host,
-                parsed.path,
-                parsed.params,
-                parsed.query,
-                parsed.fragment,
-            ]
-        )
+        pass
 
     def is_unverifiable(self):
-        return True
+        pass
 
     def has_header(self, name):
-        return name in self._r.headers or name in self._new_headers
+        pass
 
     def get_header(self, name, default=None):
-        return self._r.headers.get(name, self._new_headers.get(name, default))
+        pass
 
     def add_header(self, key, val):
         """cookiejar has no legitimate use for this method; add it back if you find one."""
@@ -82,22 +67,22 @@ class MockRequest:
         )
 
     def add_unredirected_header(self, name, value):
-        self._new_headers[name] = value
+        pass
 
     def get_new_headers(self):
         return self._new_headers
 
     @property
     def unverifiable(self):
-        return self.is_unverifiable()
+        pass
 
     @property
     def origin_req_host(self):
-        return self.get_origin_req_host()
+        pass
 
     @property
     def host(self):
-        return self.get_host()
+        pass
 
 
 class MockResponse:
@@ -118,7 +103,7 @@ class MockResponse:
         return self._headers
 
     def getheaders(self, name):
-        self._headers.getheaders(name)
+        pass
 
 
 def extract_cookies_to_jar(jar, request, response):
@@ -208,19 +193,7 @@ class RequestsCookieJar(cookielib.CookieJar, MutableMapping):
         order to resolve naming collisions from using one cookie jar over
         multiple domains.
         """
-        # support client code that unsets cookies by assignment of a None value:
-        if value is None:
-            remove_cookie_by_name(
-                self, name, domain=kwargs.get("domain"), path=kwargs.get("path")
-            )
-            return
-
-        if isinstance(value, Morsel):
-            c = morsel_to_cookie(value)
-        else:
-            c = create_cookie(name, value, **kwargs)
-        self.set_cookie(c)
-        return c
+        pass
 
     def iterkeys(self):
         """Dict-like iterkeys() that returns an iterator of names of cookies
@@ -276,19 +249,11 @@ class RequestsCookieJar(cookielib.CookieJar, MutableMapping):
 
     def list_domains(self):
         """Utility method to list all the domains in the jar."""
-        domains = []
-        for cookie in iter(self):
-            if cookie.domain not in domains:
-                domains.append(cookie.domain)
-        return domains
+        pass
 
     def list_paths(self):
         """Utility method to list all the paths in the jar."""
-        paths = []
-        for cookie in iter(self):
-            if cookie.path not in paths:
-                paths.append(cookie.path)
-        return paths
+        pass
 
     def multiple_domains(self):
         """Returns True if there are multiple domains in the jar.
@@ -296,12 +261,7 @@ class RequestsCookieJar(cookielib.CookieJar, MutableMapping):
 
         :rtype: bool
         """
-        domains = []
-        for cookie in iter(self):
-            if cookie.domain is not None and cookie.domain in domains:
-                return True
-            domains.append(cookie.domain)
-        return False  # there is only one domain in jar
+        pass
 
     def get_dict(self, domain=None, path=None):
         """Takes as an argument an optional domain and path and returns a plain
@@ -310,13 +270,7 @@ class RequestsCookieJar(cookielib.CookieJar, MutableMapping):
 
         :rtype: dict
         """
-        dictionary = {}
-        for cookie in iter(self):
-            if (domain is None or cookie.domain == domain) and (
-                path is None or cookie.path == path
-            ):
-                dictionary[cookie.name] = cookie.value
-        return dictionary
+        pass
 
     def __contains__(self, name):
         try:
@@ -491,31 +445,7 @@ def create_cookie(name, value, **kwargs):
 
 def morsel_to_cookie(morsel):
     """Convert a Morsel object into a Cookie containing the one k/v pair."""
-
-    expires = None
-    if morsel["max-age"]:
-        try:
-            expires = int(time.time() + int(morsel["max-age"]))
-        except ValueError:
-            raise TypeError(f"max-age: {morsel['max-age']} must be integer")
-    elif morsel["expires"]:
-        time_template = "%a, %d-%b-%Y %H:%M:%S GMT"
-        expires = calendar.timegm(time.strptime(morsel["expires"], time_template))
-    return create_cookie(
-        comment=morsel["comment"],
-        comment_url=bool(morsel["comment"]),
-        discard=False,
-        domain=morsel["domain"],
-        expires=expires,
-        name=morsel.key,
-        path=morsel["path"],
-        port=None,
-        rest={"HttpOnly": morsel["httponly"]},
-        rfc2109=False,
-        secure=bool(morsel["secure"]),
-        value=morsel.value,
-        version=morsel["version"] or 0,
-    )
+    pass
 
 
 def cookiejar_from_dict(cookie_dict, cookiejar=None, overwrite=True):

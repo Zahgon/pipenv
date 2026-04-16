@@ -114,8 +114,7 @@ class screen:
         '''This returns a printable representation of the screen as a unicode
         string (which, under Python 3.x, is the same as 'str'). The end of each
         screen line is terminated by a newline.'''
-
-        return u'\n'.join ([ u''.join(c) for c in self.w ])
+        pass
 
     if PY3:
         __str__ = _unicode
@@ -145,10 +144,7 @@ class screen:
 
     def fill (self, ch=SPACE):
 
-        if isinstance(ch, bytes):
-            ch = self._decode(ch)
-
-        self.fill_region (1,1,self.rows,self.cols, ch)
+        pass
 
     def fill_region (self, rs,cs, re,ce, ch=SPACE):
 
@@ -170,32 +166,23 @@ class screen:
     def cr (self):
         '''This moves the cursor to the beginning (col 1) of the current row.
         '''
-
-        self.cursor_home (self.cur_r, 1)
+        pass
 
     def lf (self):
         '''This moves the cursor down with scrolling.
         '''
-
-        old_r = self.cur_r
-        self.cursor_down()
-        if old_r == self.cur_r:
-            self.scroll_up ()
-            self.erase_line()
+        pass
 
     def crlf (self):
         '''This advances the cursor with CRLF properties.
         The cursor will line wrap and the screen may scroll.
         '''
-
-        self.cr ()
-        self.lf ()
+        pass
 
     def newline (self):
         '''This is an alias for crlf().
         '''
-
-        self.crlf()
+        pass
 
     def put_abs (self, r, c, ch):
         '''Screen array starts at 1 index.'''
@@ -252,126 +239,76 @@ class screen:
     def get_region (self, rs,cs, re,ce):
         '''This returns a list of lines representing the region.
         '''
-
-        rs = constrain (rs, 1, self.rows)
-        re = constrain (re, 1, self.rows)
-        cs = constrain (cs, 1, self.cols)
-        ce = constrain (ce, 1, self.cols)
-        if rs > re:
-            rs, re = re, rs
-        if cs > ce:
-            cs, ce = ce, cs
-        sc = []
-        for r in range (rs, re+1):
-            line = u''
-            for c in range (cs, ce + 1):
-                ch = self.get_abs (r,c)
-                line = line + ch
-            sc.append (line)
-        return sc
+        pass
 
     def cursor_constrain (self):
         '''This keeps the cursor within the screen area.
         '''
-
-        self.cur_r = constrain (self.cur_r, 1, self.rows)
-        self.cur_c = constrain (self.cur_c, 1, self.cols)
+        pass
 
     def cursor_home (self, r=1, c=1): # <ESC>[{ROW};{COLUMN}H
 
-        self.cur_r = r
-        self.cur_c = c
-        self.cursor_constrain ()
+        pass
 
     def cursor_back (self,count=1): # <ESC>[{COUNT}D (not confused with down)
 
-        self.cur_c = self.cur_c - count
-        self.cursor_constrain ()
+        pass
 
     def cursor_down (self,count=1): # <ESC>[{COUNT}B (not confused with back)
 
-        self.cur_r = self.cur_r + count
-        self.cursor_constrain ()
+        pass
 
     def cursor_forward (self,count=1): # <ESC>[{COUNT}C
 
-        self.cur_c = self.cur_c + count
-        self.cursor_constrain ()
+        pass
 
     def cursor_up (self,count=1): # <ESC>[{COUNT}A
 
-        self.cur_r = self.cur_r - count
-        self.cursor_constrain ()
+        pass
 
     def cursor_up_reverse (self): # <ESC> M   (called RI -- Reverse Index)
 
-        old_r = self.cur_r
-        self.cursor_up()
-        if old_r == self.cur_r:
-            self.scroll_up()
+        pass
 
     def cursor_force_position (self, r, c): # <ESC>[{ROW};{COLUMN}f
         '''Identical to Cursor Home.'''
-
-        self.cursor_home (r, c)
+        pass
 
     def cursor_save (self): # <ESC>[s
         '''Save current cursor position.'''
-
-        self.cursor_save_attrs()
+        pass
 
     def cursor_unsave (self): # <ESC>[u
         '''Restores cursor position after a Save Cursor.'''
-
-        self.cursor_restore_attrs()
+        pass
 
     def cursor_save_attrs (self): # <ESC>7
         '''Save current cursor position.'''
-
-        self.cur_saved_r = self.cur_r
-        self.cur_saved_c = self.cur_c
+        pass
 
     def cursor_restore_attrs (self): # <ESC>8
         '''Restores cursor position after a Save Cursor.'''
-
-        self.cursor_home (self.cur_saved_r, self.cur_saved_c)
+        pass
 
     def scroll_constrain (self):
         '''This keeps the scroll region within the screen region.'''
-
-        if self.scroll_row_start <= 0:
-            self.scroll_row_start = 1
-        if self.scroll_row_end > self.rows:
-            self.scroll_row_end = self.rows
+        pass
 
     def scroll_screen (self): # <ESC>[r
         '''Enable scrolling for entire display.'''
-
-        self.scroll_row_start = 1
-        self.scroll_row_end = self.rows
+        pass
 
     def scroll_screen_rows (self, rs, re): # <ESC>[{start};{end}r
         '''Enable scrolling from row {start} to row {end}.'''
-
-        self.scroll_row_start = rs
-        self.scroll_row_end = re
-        self.scroll_constrain()
+        pass
 
     def scroll_down (self): # <ESC>D
         '''Scroll display down one line.'''
-
-        # Screen is indexed from 1, but arrays are indexed from 0.
-        s = self.scroll_row_start - 1
-        e = self.scroll_row_end - 1
-        self.w[s+1:e+1] = copy.deepcopy(self.w[s:e])
+        pass
 
     def scroll_up (self): # <ESC>M
         '''Scroll display up one line.'''
-
-        # Screen is indexed from 1, but arrays are indexed from 0.
-        s = self.scroll_row_start - 1
-        e = self.scroll_row_end - 1
-        self.w[s:e] = copy.deepcopy(self.w[s+1:e+1])
+        pass
 
     def erase_end_of_line (self): # <ESC>[0K -or- <ESC>[K
         '''Erases from the current cursor position to the end of the current
@@ -393,21 +330,16 @@ class screen:
     def erase_down (self): # <ESC>[0J -or- <ESC>[J
         '''Erases the screen from the current line down to the bottom of the
         screen.'''
-
-        self.erase_end_of_line ()
-        self.fill_region (self.cur_r + 1, 1, self.rows, self.cols)
+        pass
 
     def erase_up (self): # <ESC>[1J
         '''Erases the screen from the current line up to the top of the
         screen.'''
-
-        self.erase_start_of_line ()
-        self.fill_region (self.cur_r-1, 1, 1, self.cols)
+        pass
 
     def erase_screen (self): # <ESC>[2J
         '''Erases the screen with the background color.'''
-
-        self.fill ()
+        pass
 
     def set_tab (self): # <ESC>H
         '''Sets a tab at the current position.'''

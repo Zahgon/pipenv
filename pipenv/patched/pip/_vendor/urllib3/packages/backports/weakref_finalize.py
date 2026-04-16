@@ -68,10 +68,7 @@ class weakref_finalize(object):
     def detach(self):
         """If alive then mark as dead and return (obj, func, args, kwargs);
         otherwise return None"""
-        info = self._registry.get(self)
-        obj = info and info.weakref()
-        if obj is not None and self._registry.pop(self, None):
-            return (obj, info.func, info.args, info.kwargs or {})
+        pass
 
     def peek(self):
         """If alive then return (obj, func, args, kwargs);
@@ -84,19 +81,16 @@ class weakref_finalize(object):
     @property
     def alive(self):
         """Whether finalizer is alive"""
-        return self in self._registry
+        pass
 
     @property
     def atexit(self):
         """Whether finalizer should be called at exit"""
-        info = self._registry.get(self)
-        return bool(info) and info.atexit
+        pass
 
     @atexit.setter
     def atexit(self, value):
-        info = self._registry.get(self)
-        if info:
-            info.atexit = bool(value)
+        pass
 
     def __repr__(self):
         info = self._registry.get(self)
@@ -114,42 +108,11 @@ class weakref_finalize(object):
     @classmethod
     def _select_for_exit(cls):
         # Return live finalizers marked for exit, oldest first
-        L = [(f, i) for (f, i) in cls._registry.items() if i.atexit]
-        L.sort(key=lambda item: item[1].index)
-        return [f for (f, i) in L]
+        pass
 
     @classmethod
     def _exitfunc(cls):
         # At shutdown invoke finalizers for which atexit is true.
         # This is called once all other non-daemonic threads have been
         # joined.
-        reenable_gc = False
-        try:
-            if cls._registry:
-                import gc
-
-                if gc.isenabled():
-                    reenable_gc = True
-                    gc.disable()
-                pending = None
-                while True:
-                    if pending is None or weakref_finalize._dirty:
-                        pending = cls._select_for_exit()
-                        weakref_finalize._dirty = False
-                    if not pending:
-                        break
-                    f = pending.pop()
-                    try:
-                        # gc is disabled, so (assuming no daemonic
-                        # threads) the following is the only line in
-                        # this function which might trigger creation
-                        # of a new finalizer
-                        f()
-                    except Exception:
-                        sys.excepthook(*sys.exc_info())
-                    assert f not in cls._registry
-        finally:
-            # prevent any more finalizers from executing during shutdown
-            weakref_finalize._shutdown = True
-            if reenable_gc:
-                gc.enable()
+        pass

@@ -297,7 +297,7 @@ class LinkEvaluator:
             if requires_python:
 
                 def get_version_sort_key(v: str) -> tuple[int, ...]:
-                    return tuple(int(s) for s in v.split(".") if s.isdigit())
+                    pass
 
                 requires_python = ",".join(
                     sorted(
@@ -586,42 +586,7 @@ class CandidateEvaluator:
               comparison operators, but then different sdist links
               with the same version, would have to be considered equal
         """
-        valid_tags = self._supported_tags
-        support_num = len(valid_tags)
-        build_tag: BuildTag = ()
-        binary_preference = 0
-        link = candidate.link
-        if link.is_wheel:
-            # can raise InvalidWheelFilename
-            wheel = Wheel(link.filename)
-            try:
-                pri = -(
-                    wheel.find_most_preferred_tag(
-                        valid_tags, self._wheel_tag_preferences
-                    )
-                )
-            except ValueError:
-                if not self._ignore_compatibility:
-                    raise UnsupportedWheel(
-                        f"{wheel.filename} is not a supported wheel for this platform. It "
-                        "can't be sorted."
-                    )
-                pri = -support_num
-            if self._prefer_binary:
-                binary_preference = 1
-            build_tag = wheel.build_tag
-        else:  # sdist
-            pri = -(support_num)
-        has_allowed_hash = int(link.is_hash_allowed(self._hashes))
-        yank_value = -1 * int(link.is_yanked)  # -1 for yanked.
-        return (
-            has_allowed_hash,
-            yank_value,
-            binary_preference,
-            candidate.version,
-            pri,
-            build_tag,
-        )
+        pass
 
     def sort_best_candidate(
         self,
@@ -752,64 +717,60 @@ class PackageFinder:
 
     @property
     def target_python(self) -> TargetPython:
-        return self._target_python
+        pass
 
     @property
     def search_scope(self) -> SearchScope:
-        return self._link_collector.search_scope
+        pass
 
     @search_scope.setter
     def search_scope(self, search_scope: SearchScope) -> None:
-        self._link_collector.search_scope = search_scope
+        pass
 
     @property
     def find_links(self) -> list[str]:
-        return self._link_collector.find_links
+        pass
 
     @property
     def index_urls(self) -> list[str]:
-        return self.search_scope.index_urls
+        pass
 
     @property
     def proxy(self) -> str | None:
-        return self._link_collector.session.pip_proxy
+        pass
 
     @property
     def trusted_hosts(self) -> Iterable[str]:
-        for host_port in self._link_collector.session.pip_trusted_origins:
-            yield build_netloc(*host_port)
+        pass
 
     @property
     def custom_cert(self) -> str | None:
         # session.verify is either a boolean (use default bundle/no SSL
         # verification) or a string path to a custom CA bundle to use. We only
         # care about the latter.
-        verify = self._link_collector.session.verify
-        return verify if isinstance(verify, str) else None
+        pass
 
     @property
     def client_cert(self) -> str | None:
-        cert = self._link_collector.session.cert
-        assert not isinstance(cert, tuple), "pip only supports PEM client certs"
-        return cert
+        pass
 
     @property
     def release_control(self) -> ReleaseControl | None:
-        return self._candidate_prefs.release_control
+        pass
 
     def set_release_control(self, release_control: ReleaseControl) -> None:
         self._candidate_prefs.release_control = release_control
 
     @property
     def prefer_binary(self) -> bool:
-        return self._candidate_prefs.prefer_binary
+        pass
 
     def set_prefer_binary(self) -> None:
         self._candidate_prefs.prefer_binary = True
 
     @property
     def uploaded_prior_to(self) -> datetime.datetime | None:
-        return self._uploaded_prior_to
+        pass
 
     def requires_python_skipped_reasons(self) -> list[str]:
         reasons = {
@@ -900,23 +861,7 @@ class PackageFinder:
     def process_project_url(
         self, project_url: Link, link_evaluator: LinkEvaluator
     ) -> list[InstallationCandidate]:
-        logger.debug(
-            "Fetching project page and analyzing links: %s",
-            project_url,
-        )
-        index_response = self._link_collector.fetch_response(project_url)
-        if index_response is None:
-            return []
-
-        page_links = list(parse_links(index_response))
-
-        with indent_log():
-            package_links = self.evaluate_links(
-                link_evaluator,
-                links=page_links,
-            )
-
-        return package_links
+        pass
 
     def find_all_candidates(self, project_name: str) -> list[InstallationCandidate]:
         """Find all available InstallationCandidate for project_name

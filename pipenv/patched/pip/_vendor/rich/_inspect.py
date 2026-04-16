@@ -63,13 +63,7 @@ class Inspect(JupyterMixin):
 
     def _make_title(self, obj: Any) -> Text:
         """Make a default title."""
-        title_str = (
-            str(obj)
-            if (isclass(obj) or callable(obj) or ismodule(obj))
-            else str(type(obj))
-        )
-        title_text = self.highlighter(title_str)
-        return title_text
+        pass
 
     def __rich__(self) -> Panel:
         return Panel.fit(
@@ -122,8 +116,7 @@ class Inspect(JupyterMixin):
         """Render object."""
 
         def sort_items(item: Tuple[str, Any]) -> Tuple[bool, str]:
-            key, (_error, value) = item
-            return (callable(value), key.strip("_").lower())
+            pass
 
         def safe_getattr(attr_name: str) -> Tuple[Any, Any]:
             """Get attribute or any exception."""
@@ -235,11 +228,7 @@ class Inspect(JupyterMixin):
 
 def get_object_types_mro(obj: Union[object, Type[Any]]) -> Tuple[type, ...]:
     """Returns the MRO of an object's class, or of the object itself if it's a class."""
-    if not hasattr(obj, "__mro__"):
-        # N.B. we cannot use `if type(obj) is type` here because it doesn't work with
-        # some types of classes, such as the ones that use abc.ABCMeta.
-        obj = type(obj)
-    return getattr(obj, "__mro__", ())
+    pass
 
 
 def get_object_types_mro_as_strings(obj: object) -> Collection[str]:
@@ -249,10 +238,7 @@ def get_object_types_mro_as_strings(obj: object) -> Collection[str]:
     Examples:
         `object_types_mro_as_strings(JSONDecoder)` will return `['json.decoder.JSONDecoder', 'builtins.object']`
     """
-    return [
-        f'{getattr(type_, "__module__", "")}.{getattr(type_, "__qualname__", "")}'
-        for type_ in get_object_types_mro(obj)
-    ]
+    pass
 
 
 def is_object_one_of_types(
@@ -262,7 +248,4 @@ def is_object_one_of_types(
     Returns `True` if the given object's class (or the object itself, if it's a class) has one of the
     fully qualified names in its MRO.
     """
-    for type_name in get_object_types_mro_as_strings(obj):
-        if type_name in fully_qualified_types_names:
-            return True
-    return False
+    pass

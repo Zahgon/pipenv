@@ -157,7 +157,7 @@ class PromptBase(Generic[PromptType]):
         Returns:
             Text: Text containing rendering of default value.
         """
-        return Text(f"({default})", "prompt.default")
+        pass
 
     def make_prompt(self, default: DefaultType) -> Text:
         """Make prompt text.
@@ -168,27 +168,7 @@ class PromptBase(Generic[PromptType]):
         Returns:
             Text: Text to display in prompt.
         """
-        prompt = self.prompt.copy()
-        prompt.end = ""
-
-        if self.show_choices and self.choices:
-            _choices = "/".join(self.choices)
-            choices = f"[{_choices}]"
-            prompt.append(" ")
-            prompt.append(choices, "prompt.choices")
-
-        if (
-            default != ...
-            and self.show_default
-            and isinstance(default, (str, self.response_type))
-        ):
-            prompt.append(" ")
-            _default = self.render_default(default)
-            prompt.append(_default)
-
-        prompt.append(self.prompt_suffix)
-
-        return prompt
+        pass
 
     @classmethod
     def get_input(
@@ -208,7 +188,7 @@ class PromptBase(Generic[PromptType]):
         Returns:
             str: String from user.
         """
-        return console.input(prompt, password=password, stream=stream)
+        pass
 
     def check_choice(self, value: str) -> bool:
         """Check value is in the list of valid choices.
@@ -219,10 +199,7 @@ class PromptBase(Generic[PromptType]):
         Returns:
             bool: True if choice was valid, otherwise False.
         """
-        assert self.choices is not None
-        if self.case_sensitive:
-            return value.strip() in self.choices
-        return value.strip().lower() in [choice.lower() for choice in self.choices]
+        pass
 
     def process_response(self, value: str) -> PromptType:
         """Process response from user, convert to prompt type.
@@ -236,24 +213,7 @@ class PromptBase(Generic[PromptType]):
         Returns:
             PromptType: The value to be returned from ask method.
         """
-        value = value.strip()
-        try:
-            return_value: PromptType = self.response_type(value)
-        except ValueError:
-            raise InvalidResponse(self.validate_error_message)
-
-        if self.choices is not None:
-            if not self.check_choice(value):
-                raise InvalidResponse(self.illegal_choice_message)
-
-            if not self.case_sensitive:
-                # return the original choice, not the lower case version
-                return_value = self.response_type(
-                    self.choices[
-                        [choice.lower() for choice in self.choices].index(value.lower())
-                    ]
-                )
-        return return_value
+        pass
 
     def on_validate_error(self, value: str, error: InvalidResponse) -> None:
         """Called to handle validation error.
@@ -262,7 +222,7 @@ class PromptBase(Generic[PromptType]):
             value (str): String entered by user.
             error (InvalidResponse): Exception instance the initiated the error.
         """
-        self.console.print(error)
+        pass
 
     def pre_prompt(self) -> None:
         """Hook to display something before the prompt."""
@@ -352,15 +312,11 @@ class Confirm(PromptBase[bool]):
 
     def render_default(self, default: DefaultType) -> Text:
         """Render the default as (y) or (n) rather than True/False."""
-        yes, no = self.choices
-        return Text(f"({yes})" if default else f"({no})", style="prompt.default")
+        pass
 
     def process_response(self, value: str) -> bool:
         """Convert choices to a bool."""
-        value = value.strip().lower()
-        if value not in self.choices:
-            raise InvalidResponse(self.validate_error_message)
-        return value == self.choices[0]
+        pass
 
 
 if __name__ == "__main__":  # pragma: no cover

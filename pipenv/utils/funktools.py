@@ -29,7 +29,7 @@ def take(n: int, iterable: Iterable) -> Iterable:
     :param int n: Number of unique groups
     :param iter iterable: An iterable to split up
     """
-    return list(islice(iterable, n))
+    pass
 
 
 def chunked(n: int, iterable: Iterable) -> Iterable:
@@ -142,30 +142,7 @@ def _walk_for_powershell(directory):
     :param directory: Directory to start searching in
     :return: Path to powershell.exe if found, None otherwise
     """
-    directory_path = Path(directory)
-
-    try:
-        # Get all files in the current directory
-        files = [f for f in directory_path.iterdir() if f.is_file()]
-
-        # Look for powershell.exe (case-insensitive)
-        powershell = next((f for f in files if f.name.lower() == "powershell.exe"), None)
-
-        if powershell is not None:
-            return powershell
-
-        # Recursively search subdirectories
-        for subdir in directory_path.iterdir():
-            if subdir.is_dir():
-                powershell = _walk_for_powershell(subdir)
-                if powershell:
-                    return powershell
-
-    except (PermissionError, FileNotFoundError):
-        # Handle cases where directories can't be accessed
-        pass
-
-    return None
+    pass
 
 
 def _get_powershell_path():
@@ -176,100 +153,23 @@ def _get_powershell_path():
 
     :return: Path to powershell.exe as a string if found, None otherwise
     """
-    # Search in common Windows directories
-    paths = [
-        Path(os.path.expandvars(rf"%windir%\{subdir}\WindowsPowerShell"))
-        for subdir in ("SysWOW64", "system32")
-    ]
-
-    # Try to find powershell in the specified paths
-    for path in paths:
-        powershell_path = _walk_for_powershell(path)
-        if powershell_path:
-            return str(powershell_path)
-
-    # Fall back to using the 'where' command
-    try:
-        powershell_result = subprocess.run(
-            ["where", "powershell"], check=False, capture_output=True, text=True
-        )
-
-        if powershell_result.stdout:
-            return powershell_result.stdout.strip()
-    except (subprocess.SubprocessError, FileNotFoundError):
-        pass
-
-    return None
+    pass
 
 
 def _get_sid_with_powershell():
-    powershell_path = _get_powershell_path()
-    if not powershell_path:
-        return None
-    args = [
-        powershell_path,
-        "-ExecutionPolicy",
-        "Bypass",
-        "-Command",
-        "Invoke-Expression '[System.Security.Principal.WindowsIdentity]::GetCurrent().user | Write-Host'",
-    ]
-    sid = subprocess.run(args, capture_output=True, check=False)
-    return sid.stdout.strip()
+    pass
 
 
 def get_value_from_tuple(value, value_type):
-    try:
-        import winreg
-    except ImportError:
-        import _winreg as winreg
-    if value_type in (winreg.REG_SZ, winreg.REG_EXPAND_SZ):
-        if "\0" in value:
-            return value[: value.index("\0")]
-        return value
-    return None
+    pass
 
 
 def query_registry_value(root, key_name, value):
-    try:
-        import winreg
-    except ImportError:
-        import _winreg as winreg
-    try:
-        with winreg.OpenKeyEx(root, key_name, 0, winreg.KEY_READ) as key:
-            return get_value_from_tuple(*winreg.QueryValueEx(key, value))
-    except OSError:
-        return None
+    pass
 
 
 def _get_sid_from_registry():
-    try:
-        import winreg
-    except ImportError:
-        import _winreg as winreg
-    var_names = ("%USERPROFILE%", "%HOME%")
-    current_user_home = next(iter(os.path.expandvars(v) for v in var_names if v), None)
-    root, subkey = (
-        winreg.HKEY_LOCAL_MACHINE,
-        r"Software\Microsoft\Windows NT\CurrentVersion\ProfileList",
-    )
-    subkey_names = []
-    value = None
-    matching_key = None
-    try:
-        with winreg.OpenKeyEx(root, subkey, 0, winreg.KEY_READ) as key:
-            for i in count():
-                key_name = winreg.EnumKey(key, i)
-                subkey_names.append(key_name)
-                value = query_registry_value(
-                    root, rf"{subkey}\{key_name}", "ProfileImagePath"
-                )
-                if value and value.lower() == current_user_home.lower():
-                    matching_key = key_name
-                    break
-    except OSError:
-        pass
-    if matching_key is not None:
-        return matching_key
+    pass
 
 
 def _get_current_user():

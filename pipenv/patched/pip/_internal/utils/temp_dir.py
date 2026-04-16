@@ -61,7 +61,7 @@ class TempDirectoryTypeRegistry:
         """Get configured auto-delete flag for a given TempDirectory type,
         default True.
         """
-        return self._should_delete.get(kind, True)
+        pass
 
 
 _tempdir_registry: TempDirectoryTypeRegistry | None = None
@@ -168,13 +168,7 @@ class TempDirectory:
 
     def _create(self, kind: str) -> str:
         """Create a temporary directory and store its path in self.path"""
-        # We realpath here because some systems have their default tmpdir
-        # symlinked to another directory.  This tends to confuse build
-        # scripts, so we canonicalize the path by traversing potential
-        # symlinks here.
-        path = os.path.realpath(tempfile.mkdtemp(prefix=f"pip-{kind}-"))
-        logger.debug("Created temporary directory: %s", path)
-        return path
+        pass
 
     def cleanup(self) -> None:
         """Remove the temporary directory created and reset state"""
@@ -190,19 +184,7 @@ class TempDirectory:
             exc_val: BaseException,
         ) -> None:
             """Log a warning for a `rmtree` error and continue"""
-            formatted_exc = "\n".join(
-                traceback.format_exception_only(type(exc_val), exc_val)
-            )
-            formatted_exc = formatted_exc.rstrip()  # remove trailing new line
-            if func in (os.unlink, os.remove, os.rmdir):
-                logger.debug(
-                    "Failed to remove a temporary file '%s' due to %s.\n",
-                    path,
-                    formatted_exc,
-                )
-            else:
-                logger.debug("%s failed with %s.", func.__qualname__, formatted_exc)
-            errors.append(exc_val)
+            pass
 
         if self.ignore_cleanup_errors:
             try:
@@ -256,39 +238,7 @@ class AdjacentTempDirectory(TempDirectory):
         valid package names (for both Python and pip definitions of
         package).
         """
-        for i in range(1, len(name)):
-            for candidate in itertools.combinations_with_replacement(
-                cls.LEADING_CHARS, i - 1
-            ):
-                new_name = "~" + "".join(candidate) + name[i:]
-                if new_name != name:
-                    yield new_name
-
-        # If we make it this far, we will have to make a longer name
-        for i in range(len(cls.LEADING_CHARS)):
-            for candidate in itertools.combinations_with_replacement(
-                cls.LEADING_CHARS, i
-            ):
-                new_name = "~" + "".join(candidate) + name
-                if new_name != name:
-                    yield new_name
+        pass
 
     def _create(self, kind: str) -> str:
-        root, name = os.path.split(self.original)
-        for candidate in self._generate_names(name):
-            path = os.path.join(root, candidate)
-            try:
-                os.mkdir(path)
-            except OSError as ex:
-                # Continue if the name exists already
-                if ex.errno != errno.EEXIST:
-                    raise
-            else:
-                path = os.path.realpath(path)
-                break
-        else:
-            # Final fallback on the default behavior.
-            path = os.path.realpath(tempfile.mkdtemp(prefix=f"pip-{kind}-"))
-
-        logger.debug("Created temporary directory: %s", path)
-        return path
+        pass

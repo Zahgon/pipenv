@@ -60,11 +60,7 @@ class ProgressBar(JupyterMixin):
     @property
     def percentage_completed(self) -> Optional[float]:
         """Calculate percentage complete."""
-        if self.total is None:
-            return None
-        completed = (self.completed / self.total) * 100.0
-        completed = min(100, max(0.0, completed))
-        return completed
+        pass
 
     @lru_cache(maxsize=16)
     def _get_pulse_segments(

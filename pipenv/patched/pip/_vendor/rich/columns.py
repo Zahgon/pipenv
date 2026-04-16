@@ -57,7 +57,7 @@ class Columns(JupyterMixin):
         Args:
             renderable (RenderableType): Any renderable object.
         """
-        self.renderables.append(renderable)
+        pass
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions

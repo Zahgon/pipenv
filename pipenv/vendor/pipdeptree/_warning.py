@@ -31,11 +31,11 @@ class WarningPrinter:
 
     @property
     def warning_type(self) -> WarningType:
-        return self._warning_type
+        pass
 
     @warning_type.setter
     def warning_type(self, new_warning_type: WarningType) -> None:
-        self._warning_type = new_warning_type
+        pass
 
     def should_warn(self) -> bool:
         return self._warning_type != WarningType.SILENCE

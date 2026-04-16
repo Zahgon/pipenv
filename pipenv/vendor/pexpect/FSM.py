@@ -275,31 +275,19 @@ PY3 = (sys.version_info[0] >= 3)
 #
 
 def BeginBuildNumber (fsm):
-    fsm.memory.append (fsm.input_symbol)
+    pass
 
 def BuildNumber (fsm):
-    s = fsm.memory.pop ()
-    s = s + fsm.input_symbol
-    fsm.memory.append (s)
+    pass
 
 def EndBuildNumber (fsm):
-    s = fsm.memory.pop ()
-    fsm.memory.append (int(s))
+    pass
 
 def DoOperator (fsm):
-    ar = fsm.memory.pop()
-    al = fsm.memory.pop()
-    if fsm.input_symbol == '+':
-        fsm.memory.append (al + ar)
-    elif fsm.input_symbol == '-':
-        fsm.memory.append (al - ar)
-    elif fsm.input_symbol == '*':
-        fsm.memory.append (al * ar)
-    elif fsm.input_symbol == '/':
-        fsm.memory.append (al / ar)
+    pass
 
 def DoEqual (fsm):
-    print(str(fsm.memory.pop()))
+    pass
 
 def Error (fsm):
     print('That does not compute.')

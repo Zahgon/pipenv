@@ -40,8 +40,7 @@ def render_scope(
 
     def sort_items(item: Tuple[str, Any]) -> Tuple[bool, str]:
         """Sort special variables first, then alphabetically."""
-        key, _ = item
-        return (not key.startswith("__"), key.lower())
+        pass
 
     items = sorted(scope.items(), key=sort_items) if sort_keys else scope.items()
     for key, value in items:

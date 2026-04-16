@@ -102,62 +102,16 @@ kernel32.QueryFullProcessImageNameW.errcheck = _check_expected(  # type: ignore
 
 @contextlib.contextmanager
 def _handle(f, *args, **kwargs):
-    handle = f(*args, **kwargs)
-    try:
-        yield handle
-    finally:
-        kernel32.CloseHandle(handle)
+    pass
 
 
 def _iter_processes():
-    f = kernel32.CreateToolhelp32Snapshot
-    with _handle(f, TH32CS_SNAPPROCESS, 0) as snap:
-        entry = ProcessEntry32()
-        entry.dwSize = ctypes.sizeof(entry)
-        ret = kernel32.Process32First(snap, entry)
-        while ret:
-            yield entry
-            ret = kernel32.Process32Next(snap, entry)
+    pass
 
 
 def _get_full_path(proch):
-    size = DWORD(MAX_PATH)
-    while True:
-        path_buff = ctypes.create_unicode_buffer("", size.value)
-        if kernel32.QueryFullProcessImageNameW(proch, 0, path_buff, size):
-            return path_buff.value
-        size.value *= 2
+    pass
 
 
 def get_shell(pid=None, max_depth=10):
-    proc_map = {
-        proc.th32ProcessID: (proc.th32ParentProcessID, proc.szExeFile)
-        for proc in _iter_processes()
-    }
-    pid = pid or os.getpid()
-
-    for _ in range(0, max_depth + 1):
-        try:
-            ppid, executable = proc_map[pid]
-        except KeyError:  # No such process? Give up.
-            break
-
-        # The executable name would be encoded with the current code page if
-        # we're in ANSI mode (usually). Try to decode it into str/unicode,
-        # replacing invalid characters to be safe (not thoeratically necessary,
-        # I think). Note that we need to use 'mbcs' instead of encoding
-        # settings from sys because this is from the Windows API, not Python
-        # internals (which those settings reflect). (pypa/pipenv#3382)
-        if isinstance(executable, bytes):
-            executable = executable.decode("mbcs", "replace")
-
-        name = executable.rpartition(".")[0].lower()
-        if name not in SHELL_NAMES:
-            pid = ppid
-            continue
-
-        key = PROCESS_QUERY_LIMITED_INFORMATION
-        with _handle(kernel32.OpenProcess, key, 0, pid) as proch:
-            return (name, _get_full_path(proch))
-
-    return None
+    pass

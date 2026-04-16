@@ -53,7 +53,7 @@ def redact_auth_from_url(url: str) -> str:
     """Replace the password in a given url with ****."""
 
     def _redact_netloc_wrapper(netloc: str) -> Tuple[str]:
-        return (redact_netloc(netloc),)
+        pass
 
     return _transform_url(url, _redact_netloc_wrapper)[0]
 

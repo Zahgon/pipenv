@@ -43,7 +43,7 @@ class Status(JupyterMixin):
 
     @property
     def renderable(self) -> Spinner:
-        return self._spinner
+        pass
 
     @property
     def console(self) -> "Console":

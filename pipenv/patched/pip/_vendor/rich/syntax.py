@@ -264,14 +264,7 @@ class Syntax(JupyterMixin):
     @classmethod
     def get_theme(cls, name: Union[str, SyntaxTheme]) -> SyntaxTheme:
         """Get a syntax theme instance."""
-        if isinstance(name, SyntaxTheme):
-            return name
-        theme: SyntaxTheme
-        if name in RICH_SYNTAX_THEMES:
-            theme = ANSISyntaxTheme(RICH_SYNTAX_THEMES[name])
-        else:
-            theme = PygmentsSyntaxTheme(name)
-        return theme
+        pass
 
     def __init__(
         self,
@@ -457,12 +450,7 @@ class Syntax(JupyterMixin):
     @property
     def default_lexer(self) -> Lexer:
         """A Pygments Lexer to use if one is not specified or invalid."""
-        return get_lexer_by_name(
-            "text",
-            stripnl=False,
-            ensurenl=True,
-            tabsize=self.tab_size,
-        )
+        pass
 
     def highlight(
         self,
@@ -588,13 +576,7 @@ class Syntax(JupyterMixin):
     @property
     def _numbers_column_width(self) -> int:
         """Get the number of characters used to render the numbers column."""
-        column_width = 0
-        if self.line_numbers:
-            column_width = (
-                len(str(self.start_line + self.code.count("\n")))
-                + NUMBERS_COLUMN_DEFAULT_PADDING
-            )
-        return column_width
+        pass
 
     def _get_number_styles(self, console: Console) -> Tuple[Style, Style, Style]:
         """Get background, number, and highlight styles for line numbers."""

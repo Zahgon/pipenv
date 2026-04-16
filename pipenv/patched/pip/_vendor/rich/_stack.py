@@ -9,7 +9,7 @@ class Stack(List[T]):
     @property
     def top(self) -> T:
         """Get top of stack."""
-        return self[-1]
+        pass
 
     def push(self, item: T) -> None:
         """Push an item on to the stack (append in stack nomenclature)."""

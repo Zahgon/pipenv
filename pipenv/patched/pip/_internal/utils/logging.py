@@ -44,16 +44,7 @@ class BrokenStdoutLoggingError(Exception):
 
 
 def _is_broken_pipe_error(exc_class: type[BaseException], exc: BaseException) -> bool:
-    if exc_class is BrokenPipeError:
-        return True
-
-    # On Windows, a broken pipe can show up as EINVAL rather than EPIPE:
-    # https://bugs.python.org/issue19612
-    # https://bugs.python.org/issue30418
-    if not WINDOWS:
-        return False
-
-    return isinstance(exc, OSError) and exc.errno in (errno.EINVAL, errno.EPIPE)
+    pass
 
 
 @contextlib.contextmanager
@@ -130,32 +121,14 @@ class IndentingFormatter(logging.Formatter):
         Return the start of the formatted log message (not counting the
         prefix to add to each line).
         """
-        if levelno < logging.WARNING:
-            return ""
-        if formatted.startswith(DEPRECATION_MSG_PREFIX):
-            # Then the message already has a prefix.  We don't want it to
-            # look like "WARNING: DEPRECATION: ...."
-            return ""
-        if levelno < logging.ERROR:
-            return "WARNING: "
-
-        return "ERROR: "
+        pass
 
     def format(self, record: logging.LogRecord) -> str:
         """
         Calls the standard formatter, but will indent all of the log message
         lines by our current indentation level.
         """
-        formatted = super().format(record)
-        message_start = self.get_message_start(formatted, record.levelno)
-        formatted = message_start + formatted
-
-        prefix = ""
-        if self.add_timestamp:
-            prefix = f"{self.formatTime(record)} "
-        prefix += " " * get_indentation()
-        formatted = "".join([prefix + line for line in formatted.splitlines(True)])
-        return formatted
+        pass
 
 
 @dataclass
@@ -204,56 +177,16 @@ class RichPipStreamHandler(RichHandler):
 
     # Our custom override on Rich's logger, to make things work as we need them to.
     def emit(self, record: logging.LogRecord) -> None:
-        style: Style | None = None
-
-        # If we are given a diagnostic error to present, present it with indentation.
-        if getattr(record, "rich", False):
-            assert isinstance(record.args, tuple)
-            (rich_renderable,) = record.args
-            assert isinstance(
-                rich_renderable, (ConsoleRenderable, RichCast, str)
-            ), f"{rich_renderable} is not rich-console-renderable"
-
-            renderable: RenderableType = IndentedRenderable(
-                rich_renderable, indent=get_indentation()
-            )
-        else:
-            message = self.format(record)
-            renderable = self.render_message(record, message)
-            if record.levelno is not None:
-                if record.levelno >= logging.ERROR:
-                    style = Style(color="red")
-                elif record.levelno >= logging.WARNING:
-                    style = Style(color="yellow")
-
-        try:
-            self.console.print(renderable, overflow="ignore", crop=False, style=style)
-        except Exception:
-            self.handleError(record)
+        pass
 
     def handleError(self, record: logging.LogRecord) -> None:
         """Called when logging is unable to log some output."""
-
-        exc_class, exc = sys.exc_info()[:2]
-        # If a broken pipe occurred while calling write() or flush() on the
-        # stdout stream in logging's Handler.emit(), then raise our special
-        # exception so we can handle it in main() instead of logging the
-        # broken pipe error and continuing.
-        if (
-            exc_class
-            and exc
-            and self.console.file is sys.stdout
-            and _is_broken_pipe_error(exc_class, exc)
-        ):
-            raise BrokenStdoutLoggingError()
-
-        return super().handleError(record)
+        pass
 
 
 class BetterRotatingFileHandler(logging.handlers.RotatingFileHandler):
     def _open(self) -> TextIOWrapper:
-        ensure_dir(os.path.dirname(self.baseFilename))
-        return super()._open()
+        pass
 
 
 class MaxLevelFilter(Filter):
@@ -261,7 +194,7 @@ class MaxLevelFilter(Filter):
         self.level = level
 
     def filter(self, record: logging.LogRecord) -> bool:
-        return record.levelno < self.level
+        pass
 
 
 class ExcludeLoggerFilter(Filter):
@@ -272,7 +205,7 @@ class ExcludeLoggerFilter(Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         # The base Filter class allows only records from a logger (or its
         # children).
-        return not super().filter(record)
+        pass
 
 
 def setup_logging(verbosity: int, no_color: bool, user_log_file: str | None) -> int:

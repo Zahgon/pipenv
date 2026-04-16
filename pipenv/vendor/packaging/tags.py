@@ -63,15 +63,15 @@ class Tag:
 
     @property
     def interpreter(self) -> str:
-        return self._interpreter
+        pass
 
     @property
     def abi(self) -> str:
-        return self._abi
+        pass
 
     @property
     def platform(self) -> str:
-        return self._platform
+        pass
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Tag):
@@ -635,17 +635,4 @@ def sys_tags(*, warn: bool = False) -> Iterator[Tag]:
     The order of the sequence corresponds to priority order for the
     interpreter, from most to least important.
     """
-
-    interp_name = interpreter_name()
-    if interp_name == "cp":
-        yield from cpython_tags(warn=warn)
-    else:
-        yield from generic_tags()
-
-    if interp_name == "pp":
-        interp = "pp3"
-    elif interp_name == "cp":
-        interp = "cp" + interpreter_version(warn=warn)
-    else:
-        interp = None
-    yield from compatible_tags(interpreter=interp)
+    pass

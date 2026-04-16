@@ -89,14 +89,11 @@ class Resource(ResourceBase):
         This is not a property to make it obvious that it returns a new stream
         each time.
         """
-        return self.finder.get_stream(self)
+        pass
 
     @cached_property
     def file_path(self):
-        global cache
-        if cache is None:
-            cache = ResourceCache()
-        return cache.get(self)
+        pass
 
     @cached_property
     def bytes(self):
@@ -104,7 +101,7 @@ class Resource(ResourceBase):
 
     @cached_property
     def size(self):
-        return self.finder.get_size(self)
+        pass
 
 
 class ResourceContainer(ResourceBase):
@@ -112,7 +109,7 @@ class ResourceContainer(ResourceBase):
 
     @cached_property
     def resources(self):
-        return self.finder.get_resources(self)
+        pass
 
 
 class ResourceFinder(object):
@@ -164,23 +161,20 @@ class ResourceFinder(object):
         return result
 
     def get_stream(self, resource):
-        return open(resource.path, 'rb')
+        pass
 
     def get_bytes(self, resource):
         with open(resource.path, 'rb') as f:
             return f.read()
 
     def get_size(self, resource):
-        return os.path.getsize(resource.path)
+        pass
 
     def get_resources(self, resource):
-        def allowed(f):
-            return (f != '__pycache__' and not
-                    f.endswith(self.skipped_extensions))
-        return set([f for f in os.listdir(resource.path) if allowed(f)])
+        pass
 
     def is_container(self, resource):
-        return self._is_directory(resource.path)
+        pass
 
     _is_directory = staticmethod(os.path.isdir)
 
@@ -250,26 +244,13 @@ class ZipResourceFinder(ResourceFinder):
         return self.loader.get_data(resource.path)
 
     def get_stream(self, resource):
-        return io.BytesIO(self.get_bytes(resource))
+        pass
 
     def get_size(self, resource):
-        path = resource.path[self.prefix_len:]
-        return self._files[path][3]
+        pass
 
     def get_resources(self, resource):
-        path = resource.path[self.prefix_len:]
-        if path and path[-1] != os.sep:
-            path += os.sep
-        plen = len(path)
-        result = set()
-        i = bisect.bisect(self.index, path)
-        while i < len(self.index):
-            if not self.index[i].startswith(path):
-                break
-            s = self.index[i][plen:]
-            result.add(s.split(os.sep, 1)[0])   # only immediate children
-            i += 1
-        return result
+        pass
 
     def _is_directory(self, path):
         path = path[self.prefix_len:]
@@ -345,14 +326,4 @@ def finder_for_path(path):
     :param path: The path.
     :return: A :class:`ResourceFinder` instance for the path.
     """
-    result = None
-    # calls any path hooks, gets importer into cache
-    pkgutil.get_importer(path)
-    loader = sys.path_importer_cache.get(path)
-    finder = _finder_registry.get(type(loader))
-    if finder:
-        module = _dummy_module
-        module.__file__ = os.path.join(path, '')
-        module.__loader__ = loader
-        result = finder(module)
-    return result
+    pass

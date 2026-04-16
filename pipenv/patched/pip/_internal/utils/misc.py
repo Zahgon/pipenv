@@ -154,29 +154,7 @@ def rmtree_errorhandler(
     * `onerror` is the original callback from `rmtree(... onerror=onerror)`
       that is chained at the end if the "rm -f" still fails.
     """
-    try:
-        st_mode = os.stat(path).st_mode
-    except OSError:
-        # it's equivalent to os.path.exists
-        return
-
-    if not st_mode & stat.S_IWRITE:
-        # convert to read/write
-        try:
-            os.chmod(path, st_mode | stat.S_IWRITE)
-        except OSError:
-            pass
-        else:
-            # use the original function to repeat the operation
-            try:
-                func(path)
-                return
-            except OSError:
-                pass
-
-    if not isinstance(exc_info, BaseException):
-        _, exc_info, _ = exc_info
-    onexc(func, path, exc_info)
+    pass
 
 
 def display_path(path: str) -> str:
@@ -382,7 +360,7 @@ class StreamWrapper(StringIO):
     # type ignore is because TextIOBase.encoding is writeable
     @property
     def encoding(self) -> str:  # type: ignore
-        return self.orig_stream.encoding
+        pass
 
 
 # Simulates an enum
@@ -494,11 +472,11 @@ def _transform_url(
 
 
 def _get_netloc(netloc: str) -> NetlocTuple:
-    return split_auth_from_netloc(netloc)
+    pass
 
 
 def _redact_netloc(netloc: str) -> tuple[str]:
-    return (redact_netloc(netloc),)
+    pass
 
 
 def split_auth_netloc_from_url(
@@ -669,18 +647,14 @@ class ConfiguredBuildBackendHookCaller(BuildBackendHookCaller):
         config_settings: Mapping[str, Any] | None = None,
         metadata_directory: str | None = None,
     ) -> str:
-        cs = self.config_holder.config_settings
-        return super().build_wheel(
-            wheel_directory, config_settings=cs, metadata_directory=metadata_directory
-        )
+        pass
 
     def build_sdist(
         self,
         sdist_directory: str,
         config_settings: Mapping[str, Any] | None = None,
     ) -> str:
-        cs = self.config_holder.config_settings
-        return super().build_sdist(sdist_directory, config_settings=cs)
+        pass
 
     def build_editable(
         self,
@@ -688,10 +662,7 @@ class ConfiguredBuildBackendHookCaller(BuildBackendHookCaller):
         config_settings: Mapping[str, Any] | None = None,
         metadata_directory: str | None = None,
     ) -> str:
-        cs = self.config_holder.config_settings
-        return super().build_editable(
-            wheel_directory, config_settings=cs, metadata_directory=metadata_directory
-        )
+        pass
 
     def get_requires_for_build_wheel(
         self, config_settings: Mapping[str, Any] | None = None
@@ -702,8 +673,7 @@ class ConfiguredBuildBackendHookCaller(BuildBackendHookCaller):
     def get_requires_for_build_sdist(
         self, config_settings: Mapping[str, Any] | None = None
     ) -> Sequence[str]:
-        cs = self.config_holder.config_settings
-        return super().get_requires_for_build_sdist(config_settings=cs)
+        pass
 
     def get_requires_for_build_editable(
         self, config_settings: Mapping[str, Any] | None = None
@@ -717,12 +687,7 @@ class ConfiguredBuildBackendHookCaller(BuildBackendHookCaller):
         config_settings: Mapping[str, Any] | None = None,
         _allow_fallback: bool = True,
     ) -> str:
-        cs = self.config_holder.config_settings
-        return super().prepare_metadata_for_build_wheel(
-            metadata_directory=metadata_directory,
-            config_settings=cs,
-            _allow_fallback=_allow_fallback,
-        )
+        pass
 
     def prepare_metadata_for_build_editable(
         self,
@@ -730,12 +695,7 @@ class ConfiguredBuildBackendHookCaller(BuildBackendHookCaller):
         config_settings: Mapping[str, Any] | None = None,
         _allow_fallback: bool = True,
     ) -> str | None:
-        cs = self.config_holder.config_settings
-        return super().prepare_metadata_for_build_editable(
-            metadata_directory=metadata_directory,
-            config_settings=cs,
-            _allow_fallback=_allow_fallback,
-        )
+        pass
 
 
 def warn_if_run_as_root() -> None:

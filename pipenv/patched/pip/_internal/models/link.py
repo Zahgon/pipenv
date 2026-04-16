@@ -68,11 +68,7 @@ class LinkHash:
     @functools.cache
     def find_hash_url_fragment(cls, url: str) -> LinkHash | None:
         """Search a string for a checksum algorithm name and encoded output value."""
-        match = cls._hash_url_fragment_re.search(url)
-        if match is None:
-            return None
-        name, value = match.groups()
-        return cls(name=name, value=value)
+        pass
 
     def as_dict(self) -> dict[str, str]:
         return {self.name: self.value}
@@ -116,8 +112,7 @@ def _clean_url_path_part(part: str) -> str:
     """
     Clean a "part" of a URL path (i.e. after splitting on "@" characters).
     """
-    # We unquote prior to quoting to make sure nothing is double quoted.
-    return urllib.parse.quote(urllib.parse.unquote(part))
+    pass
 
 
 def _clean_file_url_path(part: str) -> str:
@@ -125,16 +120,7 @@ def _clean_file_url_path(part: str) -> str:
     Clean the first part of a URL path that corresponds to a local
     filesystem path (i.e. the first part after splitting on "@" characters).
     """
-    # We unquote prior to quoting to make sure nothing is double quoted.
-    # Also, on Windows the path part might contain a drive letter which
-    # should not be quoted. On Linux where drive letters do not
-    # exist, the colon should be quoted. We rely on urllib.request
-    # to do the right thing here.
-    ret = urllib.request.pathname2url(urllib.request.url2pathname(part))
-    if ret.startswith("///"):
-        # Remove any URL authority section, leaving only the URL path.
-        ret = ret.removeprefix("//")
-    return ret
+    pass
 
 
 # percent-encoded:                   /
@@ -416,40 +402,30 @@ class Link:
 
     @property
     def url(self) -> str:
-        return self._url
+        pass
 
     @property
     def redacted_url(self) -> str:
-        return redact_auth_from_url(self.url)
+        pass
 
     @property
     def filename(self) -> str:
-        path = self.path.rstrip("/")
-        name = posixpath.basename(path)
-        if not name:
-            # Make sure we don't leak auth information if the netloc
-            # includes a username and password.
-            netloc, user_pass = split_auth_from_netloc(self.netloc)
-            return netloc
-
-        name = urllib.parse.unquote(name)
-        assert name, f"URL {self._url!r} produced no filename"
-        return name
+        pass
 
     @property
     def file_path(self) -> str:
-        return url_to_path(self.url)
+        pass
 
     @property
     def scheme(self) -> str:
-        return self._parsed_url.scheme
+        pass
 
     @property
     def netloc(self) -> str:
         """
         This can contain auth information.
         """
-        return self._parsed_url.netloc
+        pass
 
     @property
     def path(self) -> str:
@@ -460,12 +436,11 @@ class Link:
 
     @property
     def ext(self) -> str:
-        return self.splitext()[1]
+        pass
 
     @property
     def url_without_fragment(self) -> str:
-        scheme, netloc, path, query, fragment = self._parsed_url
-        return urllib.parse.urlunsplit((scheme, netloc, path, query, ""))
+        pass
 
     _egg_fragment_re = re.compile(r"[#&]egg=([^&]*)")
 
@@ -475,26 +450,13 @@ class Link:
     )
 
     def _egg_fragment(self) -> str | None:
-        match = self._egg_fragment_re.search(self._url)
-        if not match:
-            return None
-
-        # An egg fragment looks like a PEP 508 project name, along with
-        # an optional extras specifier. Anything else is invalid.
-        project_name = match.group(1)
-        if not self._project_name_re.match(project_name):
-            raise InvalidEggFragment(self, project_name)
-
-        return project_name
+        pass
 
     _subdirectory_fragment_re = re.compile(r"[#&]subdirectory=([^&]*)")
 
     @property
     def subdirectory_fragment(self) -> str | None:
-        match = self._subdirectory_fragment_re.search(self._url)
-        if not match:
-            return None
-        return match.group(1)
+        pass
 
     def metadata_link(self) -> Link | None:
         """Return a link to the associated core metadata file (if any)."""
@@ -510,15 +472,15 @@ class Link:
 
     @property
     def hash(self) -> str | None:
-        return next(iter(self._hashes.values()), None)
+        pass
 
     @property
     def hash_name(self) -> str | None:
-        return next(iter(self._hashes), None)
+        pass
 
     @property
     def show_url(self) -> str:
-        return posixpath.basename(self._url.split("#", 1)[0].split("?", 1)[0])
+        pass
 
     @property
     def is_file(self) -> bool:
@@ -529,7 +491,7 @@ class Link:
 
     @property
     def is_wheel(self) -> bool:
-        return self.ext == WHEEL_EXTENSION
+        pass
 
     @property
     def is_vcs(self) -> bool:
@@ -539,11 +501,11 @@ class Link:
 
     @property
     def is_yanked(self) -> bool:
-        return self.yanked_reason is not None
+        pass
 
     @property
     def has_hash(self) -> bool:
-        return bool(self._hashes)
+        pass
 
     def is_hash_allowed(self, hashes: Hashes | None) -> bool:
         """

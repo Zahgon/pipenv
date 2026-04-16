@@ -141,6 +141,4 @@ class PackageIndexHTMLParser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         # If tag is an anchor
-        if tag == "a":
-            # find href attribute
-            self.urls += [attr[1] for attr in attrs if attr[0] == "href"]
+        pass

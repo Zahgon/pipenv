@@ -122,9 +122,7 @@ class Timestamp:
         :param unix_float: Posix timestamp in seconds.
         :type unix_float: int or float
         """
-        seconds = int(unix_sec // 1)
-        nanoseconds = int((unix_sec % 1) * 10**9)
-        return Timestamp(seconds, nanoseconds)
+        pass
 
     def to_unix(self):
         """Get the timestamp as a floating-point value.
@@ -141,7 +139,7 @@ class Timestamp:
         :param int unix_ns: Posix timestamp in nanoseconds.
         :rtype: Timestamp
         """
-        return Timestamp(*divmod(unix_ns, 10**9))
+        pass
 
     def to_unix_nano(self):
         """Get the timestamp as a unixtime in nanoseconds.

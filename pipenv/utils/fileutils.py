@@ -56,11 +56,7 @@ if os.name == "nt":
     from ctypes import create_unicode_buffer, windll
 
     def get_long_path(short_path: str) -> str:
-        BUFFER_SIZE = 500
-        buffer = create_unicode_buffer(BUFFER_SIZE)
-        get_long_path_name = windll.kernel32.GetLongPathNameW
-        get_long_path_name(short_path, buffer, BUFFER_SIZE)
-        return buffer.value
+        pass
 
 
 def normalize_path(path: str) -> str:
@@ -240,9 +236,4 @@ def create_tracked_tempdir(*args: Any, **kwargs: Any) -> Path:
 def check_for_unc_path(path):
     # type: (Path) -> bool
     """Checks to see if a pathlib `Path` object is a unc path or not."""
-    return bool(
-        os.name == "nt"
-        and len(path.drive) > 2
-        and not path.drive[0].isalpha()
-        and path.drive[1] != ":"
-    )
+    pass

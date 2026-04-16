@@ -47,102 +47,37 @@ class PrettyHelpFormatter(optparse.IndentedHelpFormatter):
 
     def format_option_strings(self, option: optparse.Option) -> str:
         """Return a comma-separated list of option strings and metavars."""
-        opts = []
-
-        if option._short_opts:
-            opts.append(f"[optparse.shortargs]{option._short_opts[0]}[/]")
-        if option._long_opts:
-            opts.append(f"[optparse.longargs]{option._long_opts[0]}[/]")
-        if len(opts) > 1:
-            opts.insert(1, ", ")
-
-        if option.takes_value():
-            assert option.dest is not None
-            metavar = option.metavar or option.dest.lower()
-            opts.append(f" [optparse.metavar]<{escape(metavar.lower())}>[/]")
-
-        return "".join(opts)
+        pass
 
     def format_option(self, option: optparse.Option) -> str:
         """Overridden method with Rich support."""
-        # fmt: off
-        result = []
-        opts = self.option_strings[option]
-        opt_width = self.help_position - self.current_indent - 2
-        # Remove the rich style tags before calculating width during
-        # text wrap calculations. Also store the length removed to adjust
-        # the padding in the else branch.
-        stripped = re.sub(r"(\[[a-z.]+\])|(\[\/\])", "", opts)
-        style_tag_length = len(opts) - len(stripped)
-        if len(stripped) > opt_width:
-            opts = "%*s%s\n" % (self.current_indent, "", opts)  # noqa: UP031
-            indent_first = self.help_position
-        else:                       # start help on same line as opts
-            opts = "%*s%-*s  " % (self.current_indent, "",      # noqa: UP031
-                                  opt_width + style_tag_length, opts)
-            indent_first = 0
-        result.append(opts)
-        if option.help:
-            help_text = self.expand_default(option)
-            help_lines = textwrap.wrap(help_text, self.help_width)
-            result.append("%*s%s\n" % (indent_first, "", help_lines[0]))  # noqa: UP031
-            result.extend(["%*s%s\n" % (self.help_position, "", line)     # noqa: UP031
-                           for line in help_lines[1:]])
-        elif opts[-1] != "\n":
-            result.append("\n")
-        return "".join(result)
+        pass
         # fmt: on
 
     def format_heading(self, heading: str) -> str:
-        if heading == "Options":
-            return ""
-        return "[optparse.groups]" + escape(heading) + ":[/]\n"
+        pass
 
     def format_usage(self, usage: str) -> str:
         """
         Ensure there is only one newline between usage and the first heading
         if there is no description.
         """
-        contents = self.indent_lines(textwrap.dedent(usage), "  ")
-        msg = f"\n[optparse.groups]Usage:[/] {escape(contents)}\n"
-        return msg
+        pass
 
     def format_description(self, description: str | None) -> str:
         # leave full control over description to us
-        if description:
-            if hasattr(self.parser, "main"):
-                label = "[optparse.groups]Commands:[/]"
-            else:
-                label = "[optparse.groups]Description:[/]"
-
-            # some doc strings have initial newlines, some don't
-            description = description.lstrip("\n")
-            # some doc strings have final newlines and spaces, some don't
-            description = description.rstrip()
-            # dedent, then reindent
-            description = self.indent_lines(textwrap.dedent(description), "  ")
-            description = f"{label}\n{description}\n"
-            return description
-        else:
-            return ""
+        pass
 
     def format_epilog(self, epilog: str | None) -> str:
         # leave full control over epilog to us
-        if epilog:
-            return escape(epilog)
-        else:
-            return ""
+        pass
 
     def expand_default(self, option: optparse.Option) -> str:
         """Overridden HelpFormatter.expand_default() which colorizes flags."""
-        help = escape(super().expand_default(option))
-        for regex, style in self.highlights.items():
-            help = re.sub(regex, rf"[optparse.{style}] \1[/]", help)
-        return help
+        pass
 
     def indent_lines(self, text: str, indent: str) -> str:
-        new_lines = [indent + line for line in text.split("\n")]
-        return "\n".join(new_lines)
+        pass
 
 
 class UpdatingDefaultsHelpFormatter(PrettyHelpFormatter):
@@ -155,26 +90,7 @@ class UpdatingDefaultsHelpFormatter(PrettyHelpFormatter):
     """
 
     def expand_default(self, option: optparse.Option) -> str:
-        default_values = None
-        if self.parser is not None:
-            assert isinstance(self.parser, ConfigOptionParser)
-            self.parser._update_defaults(self.parser.defaults)
-            assert option.dest is not None
-            default_values = self.parser.defaults.get(option.dest)
-        help_text = super().expand_default(option)
-
-        if default_values and option.metavar == "URL":
-            if isinstance(default_values, str):
-                default_values = [default_values]
-
-            # If its not a list, we should abort and just return the help text
-            if not isinstance(default_values, list):
-                default_values = []
-
-            for val in default_values:
-                help_text = help_text.replace(val, redact_auth_from_url(val))
-
-        return help_text
+        pass
 
 
 class CustomOptionParser(optparse.OptionParser):
@@ -182,21 +98,12 @@ class CustomOptionParser(optparse.OptionParser):
         self, idx: int, *args: Any, **kwargs: Any
     ) -> optparse.OptionGroup:
         """Insert an OptionGroup at a given position."""
-        group = self.add_option_group(*args, **kwargs)
-
-        self.option_groups.pop()
-        self.option_groups.insert(idx, group)
-
-        return group
+        pass
 
     @property
     def option_list_all(self) -> list[optparse.Option]:
         """Get a list of all options, including those in option groups."""
-        res = self.option_list[:]
-        for i in self.option_groups:
-            res.extend(i.option_list)
-
-        return res
+        pass
 
 
 class ConfigOptionParser(CustomOptionParser):

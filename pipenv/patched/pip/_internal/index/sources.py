@@ -88,10 +88,7 @@ class _FlatDirectoryToUrls:
 
     @property
     def project_name_to_urls(self) -> dict[str, list[str]]:
-        if not self._scanned_directory:
-            self._scan_directory()
-
-        return self._project_name_to_urls
+        pass
 
 
 class _FlatDirectorySource(LinkSource):
@@ -123,7 +120,7 @@ class _FlatDirectorySource(LinkSource):
 
     @property
     def link(self) -> Link | None:
-        return None
+        pass
 
     def page_candidates(self) -> FoundCandidates:
         for url in self._path_to_urls.page_candidates:
@@ -154,7 +151,7 @@ class _LocalFileSource(LinkSource):
 
     @property
     def link(self) -> Link | None:
-        return self._link
+        pass
 
     def page_candidates(self) -> FoundCandidates:
         if not _is_html_file(self._link.url):
@@ -188,7 +185,7 @@ class _RemoteFileSource(LinkSource):
 
     @property
     def link(self) -> Link | None:
-        return self._link
+        pass
 
     def page_candidates(self) -> FoundCandidates:
         if not self._page_validator(self._link):
@@ -216,7 +213,7 @@ class _IndexDirectorySource(LinkSource):
 
     @property
     def link(self) -> Link | None:
-        return self._link
+        pass
 
     def page_candidates(self) -> FoundCandidates:
         yield from self._candidates_from_page(self._link)

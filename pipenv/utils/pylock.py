@@ -279,106 +279,7 @@ class PylockFile:
             FileNotFoundError: If the pyproject.toml file doesn't exist
             ValueError: If the pyproject.toml file is invalid
         """
-        if isinstance(pyproject_path, str):
-            pyproject_path = Path(pyproject_path)
-
-        if not pyproject_path.exists():
-            raise FileNotFoundError(f"pyproject.toml not found: {pyproject_path}")
-
-        if pylock_path is None:
-            pylock_path = pyproject_path.parent / "pylock.toml"
-        elif isinstance(pylock_path, str):
-            pylock_path = Path(pylock_path)
-
-        try:
-            with open(pyproject_path, encoding="utf-8") as f:
-                pyproject_data = tomlkit.parse(f.read())
-        except Exception as e:
-            raise ValueError(f"Invalid pyproject.toml file: {e}")
-
-        # Extract project metadata (PEP 621)
-        project = pyproject_data.get("project", {})
-        project_name = project.get("name", "")
-        requires_python = project.get("requires-python", "")
-
-        # Create the basic pylock.toml structure
-        pylock_data: Dict[str, Any] = {
-            "lock-version": "1.0",
-            "environments": [],
-            "created-by": "pipenv",
-            "packages": [],
-        }
-
-        if requires_python:
-            pylock_data["requires-python"] = requires_python
-
-        # Extract dependencies from [project.dependencies] (PEP 621)
-        dependencies = project.get("dependencies", [])
-
-        # Extract optional dependencies for extras (PEP 621)
-        optional_deps = project.get("optional-dependencies", {})
-        extras = list(optional_deps.keys())
-        if extras:
-            pylock_data["extras"] = extras
-
-        # Extract dependency groups (PEP 735)
-        dependency_groups_data = pyproject_data.get("dependency-groups", {})
-        dependency_groups = list(dependency_groups_data.keys())
-        if dependency_groups:
-            pylock_data["dependency-groups"] = dependency_groups
-
-        # Default groups (main dependencies)
-        pylock_data["default-groups"] = ["default"] if dependencies else []
-
-        # Parse main dependencies
-        for dep in dependencies:
-            package = cls._parse_dependency_string(dep)
-            if package:
-                pylock_data["packages"].append(package)
-
-        # Parse optional dependencies (extras)
-        for extra_name, extra_deps in optional_deps.items():
-            for dep in extra_deps:
-                package = cls._parse_dependency_string(dep)
-                if package:
-                    # Add marker for extra
-                    existing_marker = package.get("marker", "")
-                    extra_marker = f"'{extra_name}' in extras"
-                    if existing_marker:
-                        package["marker"] = f"({extra_marker}) and ({existing_marker})"
-                    else:
-                        package["marker"] = extra_marker
-                    pylock_data["packages"].append(package)
-
-        # Parse dependency groups (PEP 735)
-        for group_name, group_deps in dependency_groups_data.items():
-            for dep in group_deps:
-                # Skip include directives like {include-group = "..."}
-                if isinstance(dep, dict):
-                    continue
-                package = cls._parse_dependency_string(dep)
-                if package:
-                    # Add marker for dependency group
-                    existing_marker = package.get("marker", "")
-                    group_marker = f"'{group_name}' in dependency_groups"
-                    if existing_marker:
-                        package["marker"] = f"({group_marker}) and ({existing_marker})"
-                    else:
-                        package["marker"] = group_marker
-                    pylock_data["packages"].append(package)
-
-        # Add tool.pipenv section with metadata
-        pylock_data["tool"] = {
-            "pipenv": {
-                "generated_from": "pyproject.toml",
-                "project_name": project_name,
-                "generation_date": datetime.datetime.now(
-                    datetime.timezone.utc
-                ).isoformat(),
-            }
-        }
-
-        return cls(path=pylock_path, data=pylock_data)
+        pass
 
     @staticmethod
     def _parse_dependency_string(dep_string: str) -> Optional[Dict[str, Any]]:
@@ -390,29 +291,7 @@ class PylockFile:
         Returns:
             A dict with 'name' and optionally 'marker', or None if parsing fails
         """
-        if not dep_string or not isinstance(dep_string, str):
-            return None
-
-        try:
-            # Use pip's requirement parser
-            from pipenv.patched.pip._vendor.packaging.requirements import Requirement
-
-            req = Requirement(dep_string)
-            package: Dict[str, Any] = {"name": req.name}
-
-            # Add marker if present
-            if req.marker:
-                package["marker"] = str(req.marker)
-
-            return package
-        except Exception:
-            # Fallback: simple name extraction
-            import re
-
-            match = re.match(r"^([a-zA-Z0-9][-a-zA-Z0-9._]*)", dep_string)
-            if match:
-                return {"name": match.group(1).lower()}
-            return None
+        pass
 
     def write(self) -> None:
         """Write the pylock.toml file to disk.
@@ -547,7 +426,7 @@ class PylockFile:
     @property
     def lock_version(self) -> str:
         """Get the lock-version."""
-        return self.data.get("lock-version", "")
+        pass
 
     @property
     def environments(self) -> List[str]:
@@ -557,27 +436,27 @@ class PylockFile:
     @property
     def requires_python(self) -> Optional[str]:
         """Get the requires-python value."""
-        return self.data.get("requires-python")
+        pass
 
     @property
     def extras(self) -> List[str]:
         """Get the extras list."""
-        return self.data.get("extras", [])
+        pass
 
     @property
     def dependency_groups(self) -> List[str]:
         """Get the dependency-groups list."""
-        return self.data.get("dependency-groups", [])
+        pass
 
     @property
     def default_groups(self) -> List[str]:
         """Get the default-groups list."""
-        return self.data.get("default-groups", [])
+        pass
 
     @property
     def created_by(self) -> str:
         """Get the created-by value."""
-        return self.data.get("created-by", "")
+        pass
 
     @property
     def packages(self) -> List[Dict[str, Any]]:
@@ -587,7 +466,7 @@ class PylockFile:
     @property
     def tool(self) -> Dict[str, Any]:
         """Get the tool table."""
-        return self.data.get("tool", {})
+        pass
 
     def get_packages_for_environment(
         self,
@@ -603,44 +482,7 @@ class PylockFile:
         Returns:
             List of package dictionaries that should be installed
         """
-        from pipenv.patched.pip._vendor.packaging.markers import (
-            InvalidMarker,
-            Marker,
-        )
-
-        # Set up extras and dependency_groups for marker evaluation
-        _extras = frozenset(extras) if extras is not None else frozenset()
-        _dependency_groups = (
-            frozenset(dependency_groups)
-            if dependency_groups is not None
-            else frozenset(self.default_groups)
-        )
-
-        result = []
-
-        for package in self.packages:
-            # Check if the package has a marker
-            marker_str = package.get("marker")
-            if marker_str:
-                try:
-                    marker = Marker(marker_str)
-                    # Evaluate the marker with the lock_file context
-                    # which supports extras and dependency_groups as sets
-                    environment = {
-                        "extras": _extras,
-                        "dependency_groups": _dependency_groups,
-                    }
-                    if not marker.evaluate(environment=environment, context="lock_file"):
-                        # Marker does not match, skip this package
-                        continue
-                except InvalidMarker:
-                    # If the marker is invalid, include the package anyway
-                    # to be safe and let the installer handle it
-                    pass
-
-            result.append(package)
-
-        return result
+        pass
 
     def convert_to_pipenv_lockfile(self) -> Dict[str, Any]:
         """Convert the pylock.toml file to a Pipfile.lock format.

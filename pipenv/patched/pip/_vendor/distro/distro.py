@@ -281,7 +281,7 @@ def id() -> str:
       command, with ID values that differ from what was previously determined
       from the distro release file name.
     """
-    return _distro.id()
+    pass
 
 
 def name(pretty: bool = False) -> str:
@@ -835,28 +835,7 @@ class LinuxDistribution:
 
         For details, see :func:`distro.id`.
         """
-
-        def normalize(distro_id: str, table: Dict[str, str]) -> str:
-            distro_id = distro_id.lower().replace(" ", "_")
-            return table.get(distro_id, distro_id)
-
-        distro_id = self.os_release_attr("id")
-        if distro_id:
-            return normalize(distro_id, NORMALIZED_OS_ID)
-
-        distro_id = self.lsb_release_attr("distributor_id")
-        if distro_id:
-            return normalize(distro_id, NORMALIZED_LSB_ID)
-
-        distro_id = self.distro_release_attr("id")
-        if distro_id:
-            return normalize(distro_id, NORMALIZED_DISTRO_ID)
-
-        distro_id = self.uname_attr("id")
-        if distro_id:
-            return normalize(distro_id, NORMALIZED_DISTRO_ID)
-
-        return ""
+        pass
 
     def name(self, pretty: bool = False) -> str:
         """
@@ -1095,10 +1074,7 @@ class LinuxDistribution:
         Returns:
             A dictionary containing all information items.
         """
-        if os.path.isfile(self.os_release_file):
-            with open(self.os_release_file, encoding="utf-8") as release_file:
-                return self._parse_os_release_content(release_file)
-        return {}
+        pass
 
     @staticmethod
     def _parse_os_release_content(lines: TextIO) -> Dict[str, str]:
@@ -1114,41 +1090,7 @@ class LinuxDistribution:
         Returns:
             A dictionary containing all information items.
         """
-        props = {}
-        lexer = shlex.shlex(lines, posix=True)
-        lexer.whitespace_split = True
-
-        tokens = list(lexer)
-        for token in tokens:
-            # At this point, all shell-like parsing has been done (i.e.
-            # comments processed, quotes and backslash escape sequences
-            # processed, multi-line values assembled, trailing newlines
-            # stripped, etc.), so the tokens are now either:
-            # * variable assignments: var=value
-            # * commands or their arguments (not allowed in os-release)
-            # Ignore any tokens that are not variable assignments
-            if "=" in token:
-                k, v = token.split("=", 1)
-                props[k.lower()] = v
-
-        if "version" in props:
-            # extract release codename (if any) from version attribute
-            match = re.search(r"\((\D+)\)|,\s*(\D+)", props["version"])
-            if match:
-                release_codename = match.group(1) or match.group(2)
-                props["codename"] = props["release_codename"] = release_codename
-
-        if "version_codename" in props:
-            # os-release added a version_codename field.  Use that in
-            # preference to anything else Note that some distros purposefully
-            # do not have code names.  They should be setting
-            # version_codename=""
-            props["codename"] = props["version_codename"]
-        elif "ubuntu_codename" in props:
-            # Same as above but a non-standard field name used on older Ubuntus
-            props["codename"] = props["ubuntu_codename"]
-
-        return props
+        pass
 
     @cached_property
     def _lsb_release_info(self) -> Dict[str, str]:
@@ -1158,16 +1100,7 @@ class LinuxDistribution:
         Returns:
             A dictionary containing all information items.
         """
-        if not self.include_lsb:
-            return {}
-        try:
-            cmd = ("lsb_release", "-a")
-            stdout = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-        # Command not found or lsb_release returned error
-        except (OSError, subprocess.CalledProcessError):
-            return {}
-        content = self._to_str(stdout).splitlines()
-        return self._parse_lsb_release_content(content)
+        pass
 
     @staticmethod
     def _parse_lsb_release_content(lines: Iterable[str]) -> Dict[str, str]:
@@ -1183,66 +1116,23 @@ class LinuxDistribution:
         Returns:
             A dictionary containing all information items.
         """
-        props = {}
-        for line in lines:
-            kv = line.strip("\n").split(":", 1)
-            if len(kv) != 2:
-                # Ignore lines without colon.
-                continue
-            k, v = kv
-            props.update({k.replace(" ", "_").lower(): v.strip()})
-        return props
+        pass
 
     @cached_property
     def _uname_info(self) -> Dict[str, str]:
-        if not self.include_uname:
-            return {}
-        try:
-            cmd = ("uname", "-rs")
-            stdout = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-        except OSError:
-            return {}
-        content = self._to_str(stdout).splitlines()
-        return self._parse_uname_content(content)
+        pass
 
     @cached_property
     def _oslevel_info(self) -> str:
-        if not self.include_oslevel:
-            return ""
-        try:
-            stdout = subprocess.check_output("oslevel", stderr=subprocess.DEVNULL)
-        except (OSError, subprocess.CalledProcessError):
-            return ""
-        return self._to_str(stdout).strip()
+        pass
 
     @cached_property
     def _debian_version(self) -> str:
-        try:
-            with open(
-                os.path.join(self.etc_dir, "debian_version"), encoding="ascii"
-            ) as fp:
-                return fp.readline().rstrip()
-        except FileNotFoundError:
-            return ""
+        pass
 
     @staticmethod
     def _parse_uname_content(lines: Sequence[str]) -> Dict[str, str]:
-        if not lines:
-            return {}
-        props = {}
-        match = re.search(r"^([^\s]+)\s+([\d\.]+)", lines[0].strip())
-        if match:
-            name, version = match.groups()
-
-            # This is to prevent the Linux kernel version from
-            # appearing as the 'best' version on otherwise
-            # identifiable distributions.
-            if name == "Linux":
-                return {}
-            props["id"] = name.lower()
-            props["name"] = name
-            props["release"] = version
-        return props
+        pass
 
     @staticmethod
     def _to_str(bytestring: bytes) -> str:
@@ -1257,56 +1147,7 @@ class LinuxDistribution:
         Returns:
             A dictionary containing all information items.
         """
-        if self.distro_release_file:
-            # If it was specified, we use it and parse what we can, even if
-            # its file name or content does not match the expected pattern.
-            distro_info = self._parse_distro_release_file(self.distro_release_file)
-            basename = os.path.basename(self.distro_release_file)
-            # The file name pattern for user-specified distro release files
-            # is somewhat more tolerant (compared to when searching for the
-            # file), because we want to use what was specified as best as
-            # possible.
-            match = _DISTRO_RELEASE_BASENAME_PATTERN.match(basename)
-        else:
-            try:
-                basenames = [
-                    basename
-                    for basename in os.listdir(self.etc_dir)
-                    if basename not in _DISTRO_RELEASE_IGNORE_BASENAMES
-                    and os.path.isfile(os.path.join(self.etc_dir, basename))
-                ]
-                # We sort for repeatability in cases where there are multiple
-                # distro specific files; e.g. CentOS, Oracle, Enterprise all
-                # containing `redhat-release` on top of their own.
-                basenames.sort()
-            except OSError:
-                # This may occur when /etc is not readable but we can't be
-                # sure about the *-release files. Check common entries of
-                # /etc for information. If they turn out to not be there the
-                # error is handled in `_parse_distro_release_file()`.
-                basenames = _DISTRO_RELEASE_BASENAMES
-            for basename in basenames:
-                match = _DISTRO_RELEASE_BASENAME_PATTERN.match(basename)
-                if match is None:
-                    continue
-                filepath = os.path.join(self.etc_dir, basename)
-                distro_info = self._parse_distro_release_file(filepath)
-                # The name is always present if the pattern matches.
-                if "name" not in distro_info:
-                    continue
-                self.distro_release_file = filepath
-                break
-            else:  # the loop didn't "break": no candidate.
-                return {}
-
-        if match is not None:
-            distro_info["id"] = match.group(1)
-
-        # CloudLinux < 7: manually enrich info with proper id.
-        if "cloudlinux" in distro_info.get("name", "").lower():
-            distro_info["id"] = "cloudlinux"
-
-        return distro_info
+        pass
 
     def _parse_distro_release_file(self, filepath: str) -> Dict[str, str]:
         """
@@ -1319,16 +1160,7 @@ class LinuxDistribution:
         Returns:
             A dictionary containing all information items.
         """
-        try:
-            with open(filepath, encoding="utf-8") as fp:
-                # Only parse the first line. For instance, on SLES there
-                # are multiple lines. We don't want them...
-                return self._parse_distro_release_content(fp.readline())
-        except OSError:
-            # Ignore not being able to read a specific, seemingly version
-            # related file.
-            # See https://github.com/python-distro/distro/issues/162
-            return {}
+        pass
 
     @staticmethod
     def _parse_distro_release_content(line: str) -> Dict[str, str]:

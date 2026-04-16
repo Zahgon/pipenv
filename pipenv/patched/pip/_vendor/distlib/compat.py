@@ -296,8 +296,7 @@ else:  # pragma: no cover
             # return None, so if an exception occurred, it will propagate
 
         def open(self, *args, **kwargs):
-            base = BaseZipFile.open(self, *args, **kwargs)
-            return ZipExtFile(base)
+            pass
 
 
 try:
@@ -343,13 +342,7 @@ except AttributeError:  # pragma: no cover
         _fserrors = 'surrogateescape'
 
     def fsencode(filename):
-        if isinstance(filename, bytes):
-            return filename
-        elif isinstance(filename, text_type):
-            return filename.encode(_fsencoding, _fserrors)
-        else:
-            raise TypeError("expect bytes or str, not %s" %
-                            type(filename).__name__)
+        pass
 
     def fsdecode(filename):
         if isinstance(filename, text_type):
@@ -496,30 +489,7 @@ except ImportError:  # pragma: no cover
             Decorator to make a repr function return fillvalue for a recursive
             call
             '''
-
-            def decorating_function(user_function):
-                repr_running = set()
-
-                def wrapper(self):
-                    key = id(self), get_ident()
-                    if key in repr_running:
-                        return fillvalue
-                    repr_running.add(key)
-                    try:
-                        result = user_function(self)
-                    finally:
-                        repr_running.discard(key)
-                    return result
-
-                # Can't use functools.wraps() here because of bootstrap issues
-                wrapper.__module__ = getattr(user_function, '__module__')
-                wrapper.__doc__ = getattr(user_function, '__doc__')
-                wrapper.__name__ = getattr(user_function, '__name__')
-                wrapper.__annotations__ = getattr(user_function,
-                                                  '__annotations__', {})
-                return wrapper
-
-            return decorating_function
+            pass
 
     class ChainMap(MutableMapping):
         '''
@@ -588,12 +558,12 @@ except ImportError:  # pragma: no cover
 
         def new_child(self):  # like Django's Context.push()
             'New ChainMap with a new dict followed by all previous maps.'
-            return self.__class__({}, *self.maps)
+            pass
 
         @property
         def parents(self):  # like Django's Context.pop()
             'New ChainMap from maps[1:].'
-            return self.__class__(*self.maps[1:])
+            pass
 
         def __setitem__(self, key, value):
             self.maps[0][key] = value
@@ -896,15 +866,15 @@ except ImportError:  # pragma: no cover
 
         def viewkeys(self):
             "od.viewkeys() -> a set-like object providing a view on od's keys"
-            return KeysView(self)
+            pass
 
         def viewvalues(self):
             "od.viewvalues() -> an object providing a view on od's values"
-            return ValuesView(self)
+            pass
 
         def viewitems(self):
             "od.viewitems() -> a set-like object providing a view on od's items"
-            return ItemsView(self)
+            pass
 
 
 try:
@@ -1050,42 +1020,11 @@ except ImportError:  # pragma: no cover
 
         def ext_convert(self, value):
             """Default converter for the ext:// protocol."""
-            return self.resolve(value)
+            pass
 
         def cfg_convert(self, value):
             """Default converter for the cfg:// protocol."""
-            rest = value
-            m = self.WORD_PATTERN.match(rest)
-            if m is None:
-                raise ValueError("Unable to convert %r" % value)
-            else:
-                rest = rest[m.end():]
-                d = self.config[m.groups()[0]]
-                while rest:
-                    m = self.DOT_PATTERN.match(rest)
-                    if m:
-                        d = d[m.groups()[0]]
-                    else:
-                        m = self.INDEX_PATTERN.match(rest)
-                        if m:
-                            idx = m.groups()[0]
-                            if not self.DIGIT_PATTERN.match(idx):
-                                d = d[idx]
-                            else:
-                                try:
-                                    n = int(
-                                        idx
-                                    )  # try as number first (most likely)
-                                    d = d[n]
-                                except TypeError:
-                                    d = d[idx]
-                    if m:
-                        rest = rest[m.end():]
-                    else:
-                        raise ValueError('Unable to convert '
-                                         '%r at %r' % (value, rest))
-            # rest should be empty
-            return d
+            pass
 
         def convert(self, value):
             """
@@ -1132,6 +1071,4 @@ except ImportError:  # pragma: no cover
 
         def as_tuple(self, value):
             """Utility function which converts lists to tuples."""
-            if isinstance(value, list):
-                value = tuple(value)
-            return value
+            pass

@@ -63,15 +63,7 @@ VCS_SCHEMES = {
 def strip_ssh_from_git_uri(uri):
     # type: (S) -> S
     """Return git+ssh:// formatted URI to git+git@ format."""
-    if isinstance(uri, str) and "git+ssh://" in uri:
-        parsed = urlparse(uri)
-        # split the path on the first separating / so we can put the first segment
-        # into the 'netloc' section with a : separator
-        path_part, _, path = parsed.path.lstrip("/").partition("/")
-        path = f"/{path}"
-        parsed = parsed._replace(netloc=f"{parsed.netloc}:{path_part}", path=path)
-        uri = urlunparse(parsed).replace("git+ssh://", "git+", 1)
-    return uri
+    pass
 
 
 def add_ssh_scheme_to_git_uri(uri):
@@ -125,114 +117,18 @@ def is_star(val):
 def convert_entry_to_path(path):
     # type: (Dict[S, Union[S, bool, Tuple[S], List[S]]]) -> S
     """Convert a pipfile entry to a string."""
-
-    if not isinstance(path, Mapping):
-        raise TypeError(f"expecting a mapping, received {path!r}")
-
-    if not any(key in path for key in ["file", "path"]):
-        raise ValueError(f"missing path-like entry in supplied mapping {path!r}")
-
-    if "file" in path:
-        path = url_to_path(path["file"])
-
-    elif "path" in path:
-        path = path["path"]
-    return Path(os.fsdecode(path)).as_posix() if os.name == "nt" else os.fsdecode(path)
+    pass
 
 
 def is_installable_file(path):
     # type: (PipfileType) -> bool
     """Determine if a path can potentially be installed."""
-
-    if isinstance(path, Mapping):
-        path = convert_entry_to_path(path)
-
-    # If the string starts with a valid specifier operator, test if it is a valid
-    # specifier set before making a path object (to avoid breaking windows)
-    if any(path.startswith(spec) for spec in "!=<>~"):
-        try:
-            specifiers.SpecifierSet(path)
-        # If this is not a valid specifier, just move on and try it as a path
-        except specifiers.InvalidSpecifier:
-            pass
-        else:
-            return False
-
-    parsed = urlparse(path)
-    is_local = (
-        not parsed.scheme
-        or parsed.scheme == "file"
-        or (len(parsed.scheme) == 1 and os.name == "nt")
-    )
-
-    if parsed.scheme and parsed.scheme == "file":
-        path = os.fsdecode(url_to_path(path))
-
-    # Normalize the path
-    normalized_path = Path(normalize_path(path))
-
-    # Check if the path exists (for local paths)
-    if is_local and not normalized_path.exists():
-        return False
-
-    # Check if it's an archive file
-    is_archive = is_archive_file(str(normalized_path))
-
-    # Check if it's a local installable project directory
-    is_local_project = normalized_path.is_dir() and is_installable_dir(normalized_path)
-
-    if is_local and (is_local_project or is_archive):
-        return True
-
-    # Check if it's a remote archive
-    if not is_local and is_archive_file(parsed.path):
-        return True
-
-    return False
+    pass
 
 
 def get_setup_paths(base_path, subdirectory=None):
     """Get paths to setup.py, setup.cfg, and pyproject.toml in the given directory."""
-    if base_path is None:
-        raise TypeError("must provide a path to derive setup paths from")
-
-    # Convert to Path objects
-    base_path = Path(base_path)
-
-    # Define setup file paths in the base directory
-    setup_py = base_path / "setup.py"
-    setup_cfg = base_path / "setup.cfg"
-    pyproject_toml = base_path / "pyproject.toml"
-
-    # Handle subdirectory if specified
-    if subdirectory is not None:
-        subdirectory = Path(subdirectory)
-
-        # If subdirectory is relative, join it with base_path
-        if not subdirectory.is_absolute():
-            subdir_path = base_path / subdirectory
-        else:
-            subdir_path = subdirectory
-
-        # Define setup file paths in the subdirectory
-        subdir_setup_py = subdir_path / "setup.py"
-        subdir_setup_cfg = subdir_path / "setup.cfg"
-        subdir_pyproject_toml = subdir_path / "pyproject.toml"
-
-        # Use subdirectory paths if they exist
-        if subdir_setup_py.exists():
-            setup_py = subdir_setup_py
-        if subdir_setup_cfg.exists():
-            setup_cfg = subdir_setup_cfg
-        if subdir_pyproject_toml.exists():
-            pyproject_toml = subdir_pyproject_toml
-
-    # Return the dictionary with string paths (or None if not existing)
-    return {
-        "setup_py": str(setup_py) if setup_py.exists() else None,
-        "setup_cfg": str(setup_cfg) if setup_cfg.exists() else None,
-        "pyproject_toml": str(pyproject_toml) if pyproject_toml.exists() else None,
-    }
+    pass
 
 
 def prepare_pip_source_args(sources, pip_args=None):
@@ -397,7 +293,7 @@ def get_path(root, path, default=_UNSET):
 
 
 def default_visit(path, key, value):
-    return key, value
+    pass
 
 
 _orig_default_visit = default_visit
@@ -620,28 +516,16 @@ def merge_items(target_list, sourced=False):
     source_map = {}
 
     def remerge_enter(path, key, value):
-        new_parent, new_items = dict_path_enter(path, key, value)
-        if ret and not path and key is None:
-            new_parent = ret
-
-        try:
-            cur_val = get_path(ret, path + (key,))
-        except KeyError:
-            pass
-        else:
-            new_parent = cur_val
-
-        return new_parent, new_items
+        pass
 
     def remerge_exit(path, key, old_parent, new_parent, new_items):
-        return dict_path_exit(path, key, old_parent, new_parent, new_items)
+        pass
 
     for t_name, target in target_list:
         if sourced:
 
             def remerge_visit(path, key, value):
-                source_map[path + (key,)] = t_name  # noqa: B023
-                return True
+                pass
 
         else:
             remerge_visit = default_visit

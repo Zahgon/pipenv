@@ -36,10 +36,7 @@ class Requires(DataModel):
 
     @property
     def python_full_version(self):
-        try:
-            return self._data["python_full_version"]
-        except KeyError:
-            raise AttributeError("python_full_version")
+        pass
 
 
 META_SECTIONS = {
@@ -91,27 +88,27 @@ class Meta(DataModel):
 
     @property
     def hash_(self):
-        return self["hash"]
+        pass
 
     @hash_.setter
     def hash_(self, value):
-        self["hash"] = value
+        pass
 
     @property
     def hash(self):
-        return self["hash"]
+        pass
 
     @hash.setter
     def hash(self, value):
-        self["hash"] = value
+        pass
 
     @property
     def pipfile_spec(self):
-        return self["pipfile-spec"]
+        pass
 
     @pipfile_spec.setter
     def pipfile_spec(self, value):
-        self["pipfile-spec"] = value
+        pass
 
     @property
     def requires(self):
@@ -123,11 +120,11 @@ class Meta(DataModel):
 
     @property
     def sources(self):
-        return self["sources"]
+        pass
 
     @sources.setter
     def sources(self, value):
-        self["sources"] = value
+        pass
 
 
 class Pipenv(DataModel):

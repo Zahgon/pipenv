@@ -146,149 +146,12 @@ def parse_requirement(req):
     Parse a requirement passed in as a string. Return a Container
     whose attributes contain the various parts of the requirement.
     """
-    remaining = req.strip()
-    if not remaining or remaining.startswith('#'):
-        return None
-    m = IDENTIFIER.match(remaining)
-    if not m:
-        raise SyntaxError('name expected: %s' % remaining)
-    distname = m.groups()[0]
-    remaining = remaining[m.end():]
-    extras = mark_expr = versions = uri = None
-    if remaining and remaining[0] == '[':
-        i = remaining.find(']', 1)
-        if i < 0:
-            raise SyntaxError('unterminated extra: %s' % remaining)
-        s = remaining[1:i]
-        remaining = remaining[i + 1:].lstrip()
-        extras = []
-        while s:
-            m = IDENTIFIER.match(s)
-            if not m:
-                raise SyntaxError('malformed extra: %s' % s)
-            extras.append(m.groups()[0])
-            s = s[m.end():]
-            if not s:
-                break
-            if s[0] != ',':
-                raise SyntaxError('comma expected in extras: %s' % s)
-            s = s[1:].lstrip()
-        if not extras:
-            extras = None
-    if remaining:
-        if remaining[0] == '@':
-            # it's a URI
-            remaining = remaining[1:].lstrip()
-            m = NON_SPACE.match(remaining)
-            if not m:
-                raise SyntaxError('invalid URI: %s' % remaining)
-            uri = m.groups()[0]
-            t = urlparse(uri)
-            # there are issues with Python and URL parsing, so this test
-            # is a bit crude. See bpo-20271, bpo-23505. Python doesn't
-            # always parse invalid URLs correctly - it should raise
-            # exceptions for malformed URLs
-            if not (t.scheme and t.netloc):
-                raise SyntaxError('Invalid URL: %s' % uri)
-            remaining = remaining[m.end():].lstrip()
-        else:
-
-            def get_versions(ver_remaining):
-                """
-                Return a list of operator, version tuples if any are
-                specified, else None.
-                """
-                m = COMPARE_OP.match(ver_remaining)
-                versions = None
-                if m:
-                    versions = []
-                    while True:
-                        op = m.groups()[0]
-                        ver_remaining = ver_remaining[m.end():]
-                        m = VERSION_IDENTIFIER.match(ver_remaining)
-                        if not m:
-                            raise SyntaxError('invalid version: %s' % ver_remaining)
-                        v = m.groups()[0]
-                        versions.append((op, v))
-                        ver_remaining = ver_remaining[m.end():]
-                        if not ver_remaining or ver_remaining[0] != ',':
-                            break
-                        ver_remaining = ver_remaining[1:].lstrip()
-                        # Some packages have a trailing comma which would break things
-                        # See issue #148
-                        if not ver_remaining:
-                            break
-                        m = COMPARE_OP.match(ver_remaining)
-                        if not m:
-                            raise SyntaxError('invalid constraint: %s' % ver_remaining)
-                    if not versions:
-                        versions = None
-                return versions, ver_remaining
-
-            if remaining[0] != '(':
-                versions, remaining = get_versions(remaining)
-            else:
-                i = remaining.find(')', 1)
-                if i < 0:
-                    raise SyntaxError('unterminated parenthesis: %s' % remaining)
-                s = remaining[1:i]
-                remaining = remaining[i + 1:].lstrip()
-                # As a special diversion from PEP 508, allow a version number
-                # a.b.c in parentheses as a synonym for ~= a.b.c (because this
-                # is allowed in earlier PEPs)
-                if COMPARE_OP.match(s):
-                    versions, _ = get_versions(s)
-                else:
-                    m = VERSION_IDENTIFIER.match(s)
-                    if not m:
-                        raise SyntaxError('invalid constraint: %s' % s)
-                    v = m.groups()[0]
-                    s = s[m.end():].lstrip()
-                    if s:
-                        raise SyntaxError('invalid constraint: %s' % s)
-                    versions = [('~=', v)]
-
-    if remaining:
-        if remaining[0] != ';':
-            raise SyntaxError('invalid requirement: %s' % remaining)
-        remaining = remaining[1:].lstrip()
-
-        mark_expr, remaining = parse_marker(remaining)
-
-    if remaining and remaining[0] != '#':
-        raise SyntaxError('unexpected trailing data: %s' % remaining)
-
-    if not versions:
-        rs = distname
-    else:
-        rs = '%s %s' % (distname, ', '.join(['%s %s' % con for con in versions]))
-    return Container(name=distname, extras=extras, constraints=versions, marker=mark_expr, url=uri, requirement=rs)
+    pass
 
 
 def get_resources_dests(resources_root, rules):
     """Find destinations for resources files"""
-
-    def get_rel_path(root, path):
-        # normalizes and returns a lstripped-/-separated path
-        root = root.replace(os.path.sep, '/')
-        path = path.replace(os.path.sep, '/')
-        assert path.startswith(root)
-        return path[len(root):].lstrip('/')
-
-    destinations = {}
-    for base, suffix, dest in rules:
-        prefix = os.path.join(resources_root, base)
-        for abs_base in iglob(prefix):
-            abs_glob = os.path.join(abs_base, suffix)
-            for abs_path in iglob(abs_glob):
-                resource_file = get_rel_path(resources_root, abs_path)
-                if dest is None:  # remove the entry if it was here
-                    destinations.pop(resource_file, None)
-                else:
-                    rel_path = get_rel_path(abs_base, abs_path)
-                    rel_dest = dest.replace(os.path.sep, '/').rstrip('/')
-                    destinations[resource_file] = rel_dest + '/' + rel_path
-    return destinations
+    pass
 
 
 def in_venv():
@@ -320,104 +183,24 @@ def get_executable():
 
 
 def proceed(prompt, allowed_chars, error_prompt=None, default=None):
-    p = prompt
-    while True:
-        s = raw_input(p)
-        p = prompt
-        if not s and default:
-            s = default
-        if s:
-            c = s[0].lower()
-            if c in allowed_chars:
-                break
-            if error_prompt:
-                p = '%c: %s\n%s' % (c, error_prompt, prompt)
-    return c
+    pass
 
 
 def extract_by_key(d, keys):
-    if isinstance(keys, string_types):
-        keys = keys.split()
-    result = {}
-    for key in keys:
-        if key in d:
-            result[key] = d[key]
-    return result
+    pass
 
 
 def read_exports(stream):
-    if sys.version_info[0] >= 3:
-        # needs to be a text stream
-        stream = codecs.getreader('utf-8')(stream)
-    # Try to load as JSON, falling back on legacy format
-    data = stream.read()
-    stream = StringIO(data)
-    try:
-        jdata = json.load(stream)
-        result = jdata['extensions']['python.exports']['exports']
-        for group, entries in result.items():
-            for k, v in entries.items():
-                s = '%s = %s' % (k, v)
-                entry = get_export_entry(s)
-                assert entry is not None
-                entries[k] = entry
-        return result
-    except Exception:
-        stream.seek(0, 0)
-
-    def read_stream(cp, stream):
-        if hasattr(cp, 'read_file'):
-            cp.read_file(stream)
-        else:
-            cp.readfp(stream)
-
-    cp = configparser.ConfigParser()
-    try:
-        read_stream(cp, stream)
-    except configparser.MissingSectionHeaderError:
-        stream.close()
-        data = textwrap.dedent(data)
-        stream = StringIO(data)
-        read_stream(cp, stream)
-
-    result = {}
-    for key in cp.sections():
-        result[key] = entries = {}
-        for name, value in cp.items(key):
-            s = '%s = %s' % (name, value)
-            entry = get_export_entry(s)
-            assert entry is not None
-            # entry.dist = self
-            entries[name] = entry
-    return result
+    pass
 
 
 def write_exports(exports, stream):
-    if sys.version_info[0] >= 3:
-        # needs to be a text stream
-        stream = codecs.getwriter('utf-8')(stream)
-    cp = configparser.ConfigParser()
-    for k, v in exports.items():
-        # TODO check k, v for valid values
-        cp.add_section(k)
-        for entry in v.values():
-            if entry.suffix is None:
-                s = entry.prefix
-            else:
-                s = '%s:%s' % (entry.prefix, entry.suffix)
-            if entry.flags:
-                s = '%s [%s]' % (s, ', '.join(entry.flags))
-            cp.set(k, entry.name, s)
-    cp.write(stream)
+    pass
 
 
 @contextlib.contextmanager
 def tempdir():
-    td = tempfile.mkdtemp()
-    try:
-        yield td
-    finally:
-        shutil.rmtree(td)
+    pass
 
 
 @contextlib.contextmanager
@@ -432,12 +215,7 @@ def chdir(d):
 
 @contextlib.contextmanager
 def socket_timeout(seconds=15):
-    cto = socket.getdefaulttimeout()
-    try:
-        socket.setdefaulttimeout(seconds)
-        yield
-    finally:
-        socket.setdefaulttimeout(cto)
+    pass
 
 
 class cached_property(object):
@@ -536,19 +314,7 @@ class FileOperator(object):
         self.record_as_written(outfile)
 
     def copy_stream(self, instream, outfile, encoding=None):
-        assert not os.path.isdir(outfile)
-        self.ensure_dir(os.path.dirname(outfile))
-        logger.info('Copying stream %s to %s', instream, outfile)
-        if not self.dry_run:
-            if encoding is None:
-                outstream = open(outfile, 'wb')
-            else:
-                outstream = codecs.open(outfile, 'w', encoding=encoding)
-            try:
-                shutil.copyfileobj(instream, outstream)
-            finally:
-                outstream.close()
-        self.record_as_written(outfile)
+        pass
 
     def write_binary_file(self, path, data):
         self.ensure_dir(os.path.dirname(path))
@@ -560,7 +326,7 @@ class FileOperator(object):
         self.record_as_written(path)
 
     def write_text_file(self, path, data, encoding):
-        self.write_binary_file(path, data.encode(encoding))
+        pass
 
     def set_mode(self, bits, mask, files):
         if os.name == 'posix' or (os.name == 'java' and os._name == 'posix'):
@@ -589,56 +355,13 @@ class FileOperator(object):
                 self.dirs_created.add(path)
 
     def byte_compile(self, path, optimize=False, force=False, prefix=None, hashed_invalidation=False):
-        dpath = cache_from_source(path, not optimize)
-        logger.info('Byte-compiling %s to %s', path, dpath)
-        if not self.dry_run:
-            if force or self.newer(path, dpath):
-                if not prefix:
-                    diagpath = None
-                else:
-                    assert path.startswith(prefix)
-                    diagpath = path[len(prefix):]
-            compile_kwargs = {}
-            if hashed_invalidation and hasattr(py_compile, 'PycInvalidationMode'):
-                if not isinstance(hashed_invalidation, py_compile.PycInvalidationMode):
-                    hashed_invalidation = py_compile.PycInvalidationMode.CHECKED_HASH
-                compile_kwargs['invalidation_mode'] = hashed_invalidation
-            py_compile.compile(path, dpath, diagpath, True, **compile_kwargs)  # raise error
-        self.record_as_written(dpath)
-        return dpath
+        pass
 
     def ensure_removed(self, path):
-        if os.path.exists(path):
-            if os.path.isdir(path) and not os.path.islink(path):
-                logger.debug('Removing directory tree at %s', path)
-                if not self.dry_run:
-                    shutil.rmtree(path)
-                if self.record:
-                    if path in self.dirs_created:
-                        self.dirs_created.remove(path)
-            else:
-                if os.path.islink(path):
-                    s = 'link'
-                else:
-                    s = 'file'
-                logger.debug('Removing %s %s', s, path)
-                if not self.dry_run:
-                    os.remove(path)
-                if self.record:
-                    if path in self.files_written:
-                        self.files_written.remove(path)
+        pass
 
     def is_writable(self, path):
-        result = False
-        while not result:
-            if os.path.exists(path):
-                result = os.access(path, os.W_OK)
-                break
-            parent = os.path.dirname(path)
-            if parent == path:
-                break
-            path = parent
-        return result
+        pass
 
     def commit(self):
         """
@@ -807,41 +530,19 @@ def path_to_cache_dir(path, use_abspath=True):
 
 
 def ensure_slash(s):
-    if not s.endswith('/'):
-        return s + '/'
-    return s
+    pass
 
 
 def parse_credentials(netloc):
-    username = password = None
-    if '@' in netloc:
-        prefix, netloc = netloc.rsplit('@', 1)
-        if ':' not in prefix:
-            username = prefix
-        else:
-            username, password = prefix.split(':', 1)
-    if username:
-        username = unquote(username)
-    if password:
-        password = unquote(password)
-    return username, password, netloc
+    pass
 
 
 def get_process_umask():
-    result = os.umask(0o22)
-    os.umask(result)
-    return result
+    pass
 
 
 def is_string_sequence(seq):
-    result = True
-    i = None
-    for i, s in enumerate(seq):
-        if not isinstance(s, string_types):
-            result = False
-            break
-    assert i is not None
-    return result
+    pass
 
 
 PROJECT_NAME_AND_VERSION = re.compile('([a-z0-9_]+([.-][a-z_][a-z0-9_]*)*)-'
@@ -855,23 +556,7 @@ def split_filename(filename, project_name=None):
 
     Return name, version, pyver or None
     """
-    result = None
-    pyver = None
-    filename = unquote(filename).replace(' ', '-')
-    m = PYTHON_VERSION.search(filename)
-    if m:
-        pyver = m.group(1)
-        filename = filename[:m.start()]
-    if project_name and len(filename) > len(project_name) + 1:
-        m = re.match(re.escape(project_name) + r'\b', filename)
-        if m:
-            n = m.end()
-            result = filename[:n], filename[n + 1:], pyver
-    if result is None:
-        m = PROJECT_NAME_AND_VERSION.match(filename)
-        if m:
-            result = m.group(1), m.group(3), pyver
-    return result
+    pass
 
 
 # Allow spaces in name because of legacy dists like "Twisted Core"
@@ -888,34 +573,11 @@ def parse_name_and_version(p):
     :param p: A value in a form 'foo (1.0)'
     :return: The name and version as a tuple.
     """
-    m = NAME_VERSION_RE.match(p)
-    if not m:
-        raise DistlibException('Ill-formed name/version string: \'%s\'' % p)
-    d = m.groupdict()
-    return d['name'].strip().lower(), d['ver']
+    pass
 
 
 def get_extras(requested, available):
-    result = set()
-    requested = set(requested or [])
-    available = set(available or [])
-    if '*' in requested:
-        requested.remove('*')
-        result |= available
-    for r in requested:
-        if r == '-':
-            result.add(r)
-        elif r.startswith('-'):
-            unwanted = r[1:]
-            if unwanted not in available:
-                logger.warning('undeclared extra: %s' % unwanted)
-            if unwanted in result:
-                result.remove(unwanted)
-        else:
-            if r not in available:
-                logger.warning('undeclared extra: %s' % r)
-            result.add(r)
-    return result
+    pass
 
 
 #
@@ -924,40 +586,18 @@ def get_extras(requested, available):
 
 
 def _get_external_data(url):
-    result = {}
-    try:
-        # urlopen might fail if it runs into redirections,
-        # because of Python issue #13696. Fixed in locators
-        # using a custom redirect handler.
-        resp = urlopen(url)
-        headers = resp.info()
-        ct = headers.get('Content-Type')
-        if not ct.startswith('application/json'):
-            logger.debug('Unexpected response for JSON request: %s', ct)
-        else:
-            reader = codecs.getreader('utf-8')(resp)
-            # data = reader.read().decode('utf-8')
-            # result = json.loads(data)
-            result = json.load(reader)
-    except Exception as e:
-        logger.exception('Failed to get external data for %s: %s', url, e)
-    return result
+    pass
 
 
 _external_data_base_url = 'https://www.red-dove.com/pypi/projects/'
 
 
 def get_project_data(name):
-    url = '%s/%s/project.json' % (name[0].upper(), name)
-    url = urljoin(_external_data_base_url, url)
-    result = _get_external_data(url)
-    return result
+    pass
 
 
 def get_package_data(name, version):
-    url = '%s/%s/package-%s.json' % (name[0].upper(), name, version)
-    url = urljoin(_external_data_base_url, url)
-    return _get_external_data(url)
+    pass
 
 
 class Cache(object):
@@ -1049,7 +689,7 @@ class EventMixin(object):
         Return an iterator for the subscribers for an event.
         :param event: The event to return subscribers for.
         """
-        return iter(self._subscribers.get(event, ()))
+        pass
 
     def publish(self, event, *args, **kwargs):
         """
@@ -1062,16 +702,7 @@ class EventMixin(object):
         :param kwargs: The keyword arguments to pass to the event's
                        subscribers.
         """
-        result = []
-        for subscriber in self.get_subscribers(event):
-            try:
-                value = subscriber(event, *args, **kwargs)
-            except Exception:
-                logger.exception('Exception during event publication')
-                value = None
-            result.append(value)
-        logger.debug('publish %s: args = %s, kwargs = %s, result = %s', event, args, kwargs, result)
-        return result
+        pass
 
 
 #
@@ -1085,23 +716,10 @@ class Sequencer(object):
         self._nodes = set()  # nodes with no preds/succs
 
     def add_node(self, node):
-        self._nodes.add(node)
+        pass
 
     def remove_node(self, node, edges=False):
-        if node in self._nodes:
-            self._nodes.remove(node)
-        if edges:
-            for p in set(self._preds.get(node, ())):
-                self.remove(p, node)
-            for s in set(self._succs.get(node, ())):
-                self.remove(node, s)
-            # Remove empties
-            for k, v in list(self._preds.items()):
-                if not v:
-                    del self._preds[k]
-            for k, v in list(self._succs.items()):
-                if not v:
-                    del self._succs[k]
+        pass
 
     def add(self, pred, succ):
         assert pred != succ
@@ -1122,96 +740,19 @@ class Sequencer(object):
             raise ValueError('%r not a successor of %r' % (succ, pred))
 
     def is_step(self, step):
-        return (step in self._preds or step in self._succs or step in self._nodes)
+        pass
 
     def get_steps(self, final):
-        if not self.is_step(final):
-            raise ValueError('Unknown: %r' % final)
-        result = []
-        todo = []
-        seen = set()
-        todo.append(final)
-        while todo:
-            step = todo.pop(0)
-            if step in seen:
-                # if a step was already seen,
-                # move it to the end (so it will appear earlier
-                # when reversed on return) ... but not for the
-                # final step, as that would be confusing for
-                # users
-                if step != final:
-                    result.remove(step)
-                    result.append(step)
-            else:
-                seen.add(step)
-                result.append(step)
-                preds = self._preds.get(step, ())
-                todo.extend(preds)
-        return reversed(result)
+        pass
 
     @property
     def strong_connections(self):
         # http://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
-        index_counter = [0]
-        stack = []
-        lowlinks = {}
-        index = {}
-        result = []
-
-        graph = self._succs
-
-        def strongconnect(node):
-            # set the depth index for this node to the smallest unused index
-            index[node] = index_counter[0]
-            lowlinks[node] = index_counter[0]
-            index_counter[0] += 1
-            stack.append(node)
-
-            # Consider successors
-            try:
-                successors = graph[node]
-            except Exception:
-                successors = []
-            for successor in successors:
-                if successor not in lowlinks:
-                    # Successor has not yet been visited
-                    strongconnect(successor)
-                    lowlinks[node] = min(lowlinks[node], lowlinks[successor])
-                elif successor in stack:
-                    # the successor is in the stack and hence in the current
-                    # strongly connected component (SCC)
-                    lowlinks[node] = min(lowlinks[node], index[successor])
-
-            # If `node` is a root node, pop the stack and generate an SCC
-            if lowlinks[node] == index[node]:
-                connected_component = []
-
-                while True:
-                    successor = stack.pop()
-                    connected_component.append(successor)
-                    if successor == node:
-                        break
-                component = tuple(connected_component)
-                # storing the result
-                result.append(component)
-
-        for node in graph:
-            if node not in lowlinks:
-                strongconnect(node)
-
-        return result
+        pass
 
     @property
     def dot(self):
-        result = ['digraph G {']
-        for succ in self._preds:
-            preds = self._preds[succ]
-            for pred in preds:
-                result.append('  %s -> %s;' % (pred, succ))
-        for node in self._nodes:
-            result.append('  %s;' % node)
-        result.append('}')
-        return '\n'.join(result)
+        pass
 
 
 #
@@ -1223,84 +764,12 @@ ARCHIVE_EXTENSIONS = ('.tar.gz', '.tar.bz2', '.tar', '.zip', '.tgz', '.tbz', '.w
 
 def unarchive(archive_filename, dest_dir, format=None, check=True):
 
-    def check_path(path):
-        if not isinstance(path, text_type):
-            path = path.decode('utf-8')
-        p = os.path.abspath(os.path.join(dest_dir, path))
-        if not p.startswith(dest_dir) or p[plen] != os.sep:
-            raise ValueError('path outside destination: %r' % p)
-
-    dest_dir = os.path.abspath(dest_dir)
-    plen = len(dest_dir)
-    archive = None
-    if format is None:
-        if archive_filename.endswith(('.zip', '.whl')):
-            format = 'zip'
-        elif archive_filename.endswith(('.tar.gz', '.tgz')):
-            format = 'tgz'
-            mode = 'r:gz'
-        elif archive_filename.endswith(('.tar.bz2', '.tbz')):
-            format = 'tbz'
-            mode = 'r:bz2'
-        elif archive_filename.endswith('.tar'):
-            format = 'tar'
-            mode = 'r'
-        else:  # pragma: no cover
-            raise ValueError('Unknown format for %r' % archive_filename)
-    try:
-        if format == 'zip':
-            archive = ZipFile(archive_filename, 'r')
-            if check:
-                names = archive.namelist()
-                for name in names:
-                    check_path(name)
-        else:
-            archive = tarfile.open(archive_filename, mode)
-            if check:
-                names = archive.getnames()
-                for name in names:
-                    check_path(name)
-        if format != 'zip' and sys.version_info[0] < 3:
-            # See Python issue 17153. If the dest path contains Unicode,
-            # tarfile extraction fails on Python 2.x if a member path name
-            # contains non-ASCII characters - it leads to an implicit
-            # bytes -> unicode conversion using ASCII to decode.
-            for tarinfo in archive.getmembers():
-                if not isinstance(tarinfo.name, text_type):
-                    tarinfo.name = tarinfo.name.decode('utf-8')
-
-        # Limit extraction of dangerous items, if this Python
-        # allows it easily. If not, just trust the input.
-        # See: https://docs.python.org/3/library/tarfile.html#extraction-filters
-        def extraction_filter(member, path):
-            """Run tarfile.tar_filter, but raise the expected ValueError"""
-            # This is only called if the current Python has tarfile filters
-            try:
-                return tarfile.tar_filter(member, path)
-            except tarfile.FilterError as exc:
-                raise ValueError(str(exc))
-
-        archive.extraction_filter = extraction_filter
-
-        archive.extractall(dest_dir)
-
-    finally:
-        if archive:
-            archive.close()
+    pass
 
 
 def zip_dir(directory):
     """zip a directory tree into a BytesIO object"""
-    result = io.BytesIO()
-    dlen = len(directory)
-    with ZipFile(result, "w") as zf:
-        for root, dirs, files in os.walk(directory):
-            for name in files:
-                full = os.path.join(root, name)
-                rel = root[dlen:]
-                dest = os.path.join(rel, name)
-                zf.write(full, dest)
-    return result
+    pass
 
 
 #
@@ -1346,58 +815,22 @@ class Progress(object):
 
     @property
     def maximum(self):
-        return self.unknown if self.max is None else self.max
+        pass
 
     @property
     def percentage(self):
-        if self.done:
-            result = '100 %'
-        elif self.max is None:
-            result = ' ?? %'
-        else:
-            v = 100.0 * (self.cur - self.min) / (self.max - self.min)
-            result = '%3d %%' % v
-        return result
+        pass
 
     def format_duration(self, duration):
-        if (duration <= 0) and self.max is None or self.cur == self.min:
-            result = '??:??:??'
-        # elif duration < 1:
-        #     result = '--:--:--'
-        else:
-            result = time.strftime('%H:%M:%S', time.gmtime(duration))
-        return result
+        pass
 
     @property
     def ETA(self):
-        if self.done:
-            prefix = 'Done'
-            t = self.elapsed
-            # import pdb; pdb.set_trace()
-        else:
-            prefix = 'ETA '
-            if self.max is None:
-                t = -1
-            elif self.elapsed == 0 or (self.cur == self.min):
-                t = 0
-            else:
-                # import pdb; pdb.set_trace()
-                t = float(self.max - self.min)
-                t /= self.cur - self.min
-                t = (t - 1) * self.elapsed
-        return '%s: %s' % (prefix, self.format_duration(t))
+        pass
 
     @property
     def speed(self):
-        if self.elapsed == 0:
-            result = 0.0
-        else:
-            result = (self.cur - self.min) / self.elapsed
-        for unit in UNITS:
-            if result < 1000:
-                break
-            result /= 1000.0
-        return '%d %sB/s' % (result, unit)
+        pass
 
 
 #
@@ -1411,41 +844,11 @@ _CHECK_MISMATCH_SET = re.compile(r'^[^{]*\}|\{[^}]*$')
 
 def iglob(path_glob):
     """Extended globbing function that supports ** and {opt1,opt2,opt3}."""
-    if _CHECK_RECURSIVE_GLOB.search(path_glob):
-        msg = """invalid glob %r: recursive glob "**" must be used alone"""
-        raise ValueError(msg % path_glob)
-    if _CHECK_MISMATCH_SET.search(path_glob):
-        msg = """invalid glob %r: mismatching set marker '{' or '}'"""
-        raise ValueError(msg % path_glob)
-    return _iglob(path_glob)
+    pass
 
 
 def _iglob(path_glob):
-    rich_path_glob = RICH_GLOB.split(path_glob, 1)
-    if len(rich_path_glob) > 1:
-        assert len(rich_path_glob) == 3, rich_path_glob
-        prefix, set, suffix = rich_path_glob
-        for item in set.split(','):
-            for path in _iglob(''.join((prefix, item, suffix))):
-                yield path
-    else:
-        if '**' not in path_glob:
-            for item in std_iglob(path_glob):
-                yield item
-        else:
-            prefix, radical = path_glob.split('**', 1)
-            if prefix == '':
-                prefix = '.'
-            if radical == '':
-                radical = '*'
-            else:
-                # we support both
-                radical = radical.lstrip('/')
-                radical = radical.lstrip('\\')
-            for path, dir, files in os.walk(prefix):
-                path = os.path.normpath(path)
-                for fn in _iglob(os.path.join(path, radical)):
-                    yield fn
+    pass
 
 
 if ssl:
@@ -1505,21 +908,10 @@ if ssl:
             which just sets check_domain to False in the class definition, and
             choose which one to pass to do_open.
             """
-            result = HTTPSConnection(*args, **kwargs)
-            if self.ca_certs:
-                result.ca_certs = self.ca_certs
-                result.check_domain = self.check_domain
-            return result
+            pass
 
         def https_open(self, req):
-            try:
-                return self.do_open(self._conn_maker, req)
-            except URLError as e:
-                if 'certificate verify failed' in str(e.reason):
-                    raise CertificateError('Unable to verify server certificate '
-                                           'for %s' % req.host)
-                else:
-                    raise
+            pass
 
     #
     # To prevent against mixing HTTP traffic with HTTPS (examples: A Man-In-The-
@@ -1547,11 +939,7 @@ class Transport(xmlrpclib.Transport):
         xmlrpclib.Transport.__init__(self, use_datetime)
 
     def make_connection(self, host):
-        h, eh, x509 = self.get_host_info(host)
-        if not self._connection or host != self._connection[0]:
-            self._extra_headers = eh
-            self._connection = host, httplib.HTTPConnection(h)
-        return self._connection[1]
+        pass
 
 
 if ssl:
@@ -1563,14 +951,7 @@ if ssl:
             xmlrpclib.SafeTransport.__init__(self, use_datetime)
 
         def make_connection(self, host):
-            h, eh, kwargs = self.get_host_info(host)
-            if not kwargs:
-                kwargs = {}
-            kwargs['timeout'] = self.timeout
-            if not self._connection or host != self._connection[0]:
-                self._extra_headers = eh
-                self._connection = host, httplib.HTTPSConnection(h, None, **kwargs)
-            return self._connection[1]
+            pass
 
 
 class ServerProxy(xmlrpclib.ServerProxy):
@@ -1599,14 +980,7 @@ class ServerProxy(xmlrpclib.ServerProxy):
 
 
 def _csv_open(fn, mode, **kwargs):
-    if sys.version_info[0] < 3:
-        mode += 'b'
-    else:
-        kwargs['newline'] = ''
-        # Python 3 determines encoding from locale. Force 'utf-8'
-        # file encoding to match other forced utf-8 encoding
-        kwargs['encoding'] = 'utf-8'
-    return open(fn, mode, **kwargs)
+    pass
 
 
 class CSVBase(object):
@@ -1657,14 +1031,7 @@ class CSVWriter(CSVBase):
         self.writer = csv.writer(self.stream, **self.defaults)
 
     def writerow(self, row):
-        if sys.version_info[0] < 3:
-            r = []
-            for item in row:
-                if isinstance(item, text_type):
-                    item = item.encode('utf-8')
-                r.append(item)
-            row = r
-        self.writer.writerow(row)
+        pass
 
 
 #
@@ -1721,11 +1088,7 @@ class Configurator(BaseConfigurator):
 
     def inc_convert(self, value):
         """Default converter for the inc:// protocol."""
-        if not os.path.isabs(value):
-            value = os.path.join(self.base, value)
-        with codecs.open(value, 'r', encoding='utf-8') as f:
-            result = json.load(f)
-        return result
+        pass
 
 
 class SubprocessMixin(object):
@@ -1872,11 +1235,11 @@ def _load_pypirc(index):
     """
     Read the PyPI access configuration as supported by distutils.
     """
-    return PyPIRCFile(url=index.url).read()
+    pass
 
 
 def _store_pypirc(index):
-    PyPIRCFile().update(index.username, index.password)
+    pass
 
 
 #

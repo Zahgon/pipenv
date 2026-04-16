@@ -128,7 +128,7 @@ class Script:
     @property
     def is_sequence(self):
         """True when this script represents multiple sequential commands."""
-        return self._sequence is not None
+        pass
 
     def __repr__(self):
         if self._sequence is not None:
@@ -137,15 +137,15 @@ class Script:
 
     @property
     def command(self):
-        return self._parts[0]
+        pass
 
     @property
     def args(self):
-        return self._parts[1:]
+        pass
 
     @property
     def cmd_args(self):
-        return self._parts
+        pass
 
     def extend(self, extra_args):
         """Append *extra_args* to the script.
@@ -177,20 +177,7 @@ class Script:
         value string.  If no inline env vars are present the original script
         object and an empty dict are returned unchanged.
         """
-        parts = list(self._parts)  # [command, *args]
-        inline_env = {}
-        i = 0
-        # Leave at least one token so we never consume the real command.
-        while i < len(parts) - 1:
-            m = _ENV_VAR_RE.match(parts[i])
-            if not m:
-                break
-            inline_env[m.group(1)] = m.group(2)
-            i += 1
-        if not inline_env:
-            return self, {}
-        new_script = Script(parts[i], parts[i + 1 :])
-        return new_script, inline_env
+        pass
 
     def cmdify(self):
         """Encode into a cmd-executable string.

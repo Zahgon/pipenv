@@ -20,81 +20,7 @@ def generate_requirements(
     include_index=True,
 ):
     # If --no-lock, generate from Pipfile directly without using lockfile versions
-    if no_lock:
-        _generate_requirements_from_pipfile(
-            project=project,
-            dev=dev,
-            dev_only=dev_only,
-            include_markers=include_markers,
-            categories=categories,
-            include_index=include_index,
-        )
-        return
-
-    lockfile = project.load_lockfile(expand_env_vars=False)
-    pipfile_package_names = project.pipfile_package_names
-
-    # Print index URLs first (unless excluded).
-    # We deliberately do NOT expand env vars here so that credentials stored
-    # as ``${TOKEN}`` remain as templates that pip can expand itself (per
-    # https://pip.pypa.io/en/stable/reference/requirements-file-format/#using-environment-variables).
-    # We *do* normalise bare ``$VAR`` to ``${VAR}`` because pip only supports
-    # the braced form (#5272).
-    if include_index:
-        for i, package_index in enumerate(lockfile["_meta"]["sources"]):
-            prefix = "-i" if i == 0 else "--extra-index-url"
-            url = re.sub(
-                r"\$([A-Za-z_][A-Za-z0-9_]*)",
-                r"${\1}",
-                package_index["url"],
-            )
-            print(f"{prefix} {url}")
-
-    deps = {}
-    categories_list = re.split(r", *| ", categories) if categories else []
-
-    if categories_list:
-        for category in categories_list:
-            lockfile_category = get_lockfile_section_using_pipfile_category(
-                category.strip()
-            )
-            category_deps = lockfile.get(lockfile_category, {})
-            if from_pipfile:
-                # Use the specific category's package names, not combined
-                category_package_names = pipfile_package_names.get(
-                    category.strip(), set()
-                )
-                category_deps = {
-                    k: v for k, v in category_deps.items() if k in category_package_names
-                }
-            deps.update(category_deps)
-    else:
-        if dev or dev_only:
-            dev_deps = lockfile["develop"]
-            if from_pipfile:
-                # Only use dev-packages names when filtering dev dependencies
-                dev_package_names = pipfile_package_names.get("dev-packages", set())
-                dev_deps = {k: v for k, v in dev_deps.items() if k in dev_package_names}
-            deps.update(dev_deps)
-        if not dev_only:
-            default_deps = lockfile["default"]
-            if from_pipfile:
-                # Only use packages names when filtering default dependencies
-                default_package_names = pipfile_package_names.get("packages", set())
-                default_deps = {
-                    k: v for k, v in default_deps.items() if k in default_package_names
-                }
-            deps.update(default_deps)
-
-    pip_installable_lines = requirements_from_lockfile(
-        deps, include_hashes=include_hashes, include_markers=include_markers
-    )
-
-    # Print each requirement on its own line
-    for line in pip_installable_lines:
-        print(line)  # Use print instead of console.print
-
-    sys.exit(0)
+    pass
 
 
 def _generate_requirements_from_pipfile(
@@ -110,38 +36,4 @@ def _generate_requirements_from_pipfile(
     This is useful for libraries that need looser version constraints than
     the strictly pinned versions in Pipfile.lock.
     """
-    parsed_pipfile = project.parsed_pipfile
-
-    # Print index URLs from Pipfile sources (unless excluded)
-    if include_index:
-        sources = parsed_pipfile.get("source", [])
-        for i, source in enumerate(sources):
-            url = source.get("url", "")
-            if url:
-                prefix = "-i" if i == 0 else "--extra-index-url"
-                print(f"{prefix} {url}")
-
-    deps = {}
-    categories_list = re.split(r", *| ", categories) if categories else []
-
-    if categories_list:
-        for category in categories_list:
-            category_deps = project.get_pipfile_section(category.strip())
-            deps.update(category_deps)
-    else:
-        if dev or dev_only:
-            dev_deps = project.get_pipfile_section("dev-packages")
-            deps.update(dev_deps)
-        if not dev_only:
-            default_deps = project.get_pipfile_section("packages")
-            deps.update(default_deps)
-
-    pip_installable_lines = requirements_from_pipfile(
-        deps, include_markers=include_markers
-    )
-
-    # Print each requirement on its own line
-    for line in pip_installable_lines:
-        print(line)
-
-    sys.exit(0)
+    pass

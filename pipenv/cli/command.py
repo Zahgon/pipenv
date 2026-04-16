@@ -53,38 +53,11 @@ def do_py(project, system=False, bare=False):
 
 def _open_editor(filename):
     """Open filename in the user's editor (replaces click.edit)."""
-    import subprocess
-
-    editor = os.environ.get("EDITOR") or os.environ.get("VISUAL") or "vi"
-    subprocess.call([editor, str(filename)])
+    pass
 
 
 def cmd_install(args, state):
-    from pipenv.routines.install import do_install
-
-    if state.installstate.all_categories:
-        state.installstate.categories = state.project.get_package_categories()
-    else:
-        apply_default_categories(args, state)
-
-    do_install(
-        state.project,
-        dev=state.installstate.dev,
-        python=state.python,
-        pypi_mirror=state.pypi_mirror,
-        system=state.system,
-        ignore_pipfile=state.installstate.ignore_pipfile,
-        requirementstxt=state.installstate.requirementstxt,
-        pre=state.installstate.pre,
-        deploy=state.installstate.deploy,
-        index=state.index,
-        packages=state.installstate.packages,
-        editable_packages=state.installstate.editables,
-        site_packages=state.site_packages,
-        extra_pip_args=state.installstate.extra_pip_args,
-        pipfile_categories=state.installstate.categories,
-        skip_lock=state.installstate.skip_lock,
-    )
+    pass
 
 
 def cmd_remove(args, state):
@@ -112,482 +85,71 @@ def cmd_remove(args, state):
 
 
 def cmd_upgrade(args, state):
-    from pipenv.routines.update import upgrade
-    from pipenv.utils.project import ensure_project
-
-    if state.installstate.all_categories:
-        state.installstate.categories = state.project.get_package_categories()
-    else:
-        apply_default_categories(args, state)
-
-    ensure_project(
-        state.project,
-        python=state.python,
-        pypi_mirror=state.pypi_mirror,
-        warn=(not state.quiet),
-        site_packages=state.site_packages,
-        clear=state.clear,
-    )
-
-    upgrade(
-        state.project,
-        pre=state.installstate.pre,
-        packages=state.installstate.packages,
-        editable_packages=state.installstate.editables,
-        categories=state.installstate.categories,
-        index_url=state.index,
-        dev=state.installstate.dev,
-        system=state.system,
-        lock_only=state.installstate.lock_only,
-        extra_pip_args=state.installstate.extra_pip_args,
-    )
+    pass
 
 
 def cmd_uninstall(args, state):
-    from pipenv.routines.uninstall import do_uninstall
-
-    # --dev means "operate on dev-packages"; translate it to a category so that
-    # do_uninstall looks in the right Pipfile section.
-    if getattr(args, "dev", None) and not state.installstate.categories:
-        state.installstate.categories = ["dev-packages"]
-
-    apply_default_categories(args, state)
-
-    pre = state.installstate.pre
-
-    retcode = do_uninstall(
-        state.project,
-        packages=state.installstate.packages,
-        editable_packages=state.installstate.editables,
-        python=state.python,
-        system=state.system,
-        lock=False,
-        all_dev=args.all_dev,
-        all=args.all,
-        pre=pre,
-        pypi_mirror=state.pypi_mirror,
-        categories=state.installstate.categories,
-    )
-    if retcode:
-        sys.exit(retcode)
+    pass
 
 
 def cmd_lock(args, state):
-    from pipenv.routines.lock import do_lock
-    from pipenv.utils.project import ensure_project
-
-    apply_default_categories(args, state)
-
-    ensure_project(
-        state.project,
-        python=state.python,
-        pypi_mirror=state.pypi_mirror,
-        warn=(not state.quiet),
-        site_packages=state.site_packages,
-    )
-
-    pre = state.installstate.pre
-    do_lock(
-        state.project,
-        clear=state.clear,
-        pre=pre,
-        pypi_mirror=state.pypi_mirror,
-        write=True,
-        quiet=state.quiet,
-        categories=state.installstate.categories,
-    )
+    pass
 
 
 def cmd_shell(args, state):
-    from pipenv.routines.shell import do_shell
-
-    if "PIPENV_ACTIVE" in os.environ:
-        venv_name = os.environ.get("VIRTUAL_ENV", "UNKNOWN_VIRTUAL_ENVIRONMENT")
-        if not args.anyway:
-            err.print(
-                f"Shell for [green bold]{venv_name}[/green bold] "
-                "[bold]already activated[/bold].\n"
-                "New shell not activated to avoid nested environments."
-            )
-            sys.exit(1)
-
-    fancy = args.fancy
-    if (
-        os.name == "nt"
-        or Path(os.environ.get("PIPENV_SHELL") or "").name == "pwsh"
-        or Path(os.environ.get("SHELL") or "").name == "pwsh"
-        or os.environ.get("POSH_THEME")
-    ):
-        fancy = True
-    do_shell(
-        state.project,
-        python=state.python,
-        fancy=fancy,
-        shell_args=args.shell_args,
-        pypi_mirror=state.pypi_mirror,
-        quiet=state.quiet,
-    )
+    pass
 
 
 def cmd_activate(args, state):
-    from pipenv.shells import ShellDetectionFailure, _get_activate_script, detect_info
-    from pipenv.utils.project import ensure_project
-
-    ensure_project(
-        state.project,
-        python=state.python,
-        validate=False,
-        pypi_mirror=state.pypi_mirror,
-    )
-
-    if not state.project.virtualenv_exists:
-        err.print(
-            "No virtualenv has been created for this project yet!\n"
-            "Run [green bold]pipenv install[/green bold] to create one.",
-            style="red bold",
-        )
-        sys.exit(1)
-
-    try:
-        shell_type, shell_cmd = detect_info(state.project)
-    except ShellDetectionFailure:
-        err.print(
-            "Unable to detect shell. Set PIPENV_SHELL environment variable.",
-            style="red bold",
-        )
-        sys.exit(1)
-
-    venv_path = state.project.virtualenv_location
-    activate_cmd = _get_activate_script(shell_cmd, venv_path)
-    print(activate_cmd.strip())
+    pass
 
 
 def cmd_run(args, state, extra_args=None):
-    from pipenv.routines.shell import do_run
-
-    if not args.run_command:
-        err.print("Error: Missing argument 'command'.")
-        sys.exit(1)
-
-    # extra_args contains everything after run_command (captured by parse_known_args).
-    run_args = list(extra_args or [])
-    do_run(
-        state.project,
-        command=args.run_command,
-        args=run_args,
-        python=state.python,
-        pypi_mirror=state.pypi_mirror,
-        system=state.system,
-    )
+    pass
 
 
 def cmd_check(args, state):
-    from pipenv.routines.check import do_check
-
-    do_check(
-        state.project,
-        python=state.python,
-        system=state.system,
-        db=args.db,
-        ignore=args.ignore,
-        output=args.output,
-        key=args.key,
-        quiet=state.quiet,
-        verbose=state.verbose,
-        exit_code=args.exit_code,
-        policy_file=args.policy_file,
-        save_json=args.save_json,
-        audit_and_monitor=args.audit_and_monitor,
-        safety_project=args.project,
-        pypi_mirror=state.pypi_mirror,
-        use_installed=args.use_installed,
-        categories=args.categories,
-        auto_install=args.auto_install,
-        scan=args.scan,
-    )
+    pass
 
 
 def cmd_audit(args, state):
-    from pipenv.routines.audit import do_audit
-
-    do_audit(
-        state.project,
-        python=state.python,
-        system=state.system,
-        output=args.output,
-        quiet=state.quiet,
-        verbose=state.verbose,
-        strict=args.strict,
-        ignore=args.ignore,
-        fix=args.fix,
-        dry_run=args.dry_run,
-        skip_editable=args.skip_editable,
-        no_deps=args.no_deps,
-        local_only=args.local,
-        vulnerability_service=args.vulnerability_service,
-        descriptions=args.desc,
-        aliases=args.aliases,
-        output_file=args.output_file,
-        pypi_mirror=state.pypi_mirror,
-        use_lockfile=args.locked,
-    )
+    pass
 
 
 def cmd_update(args, state):
-    from pipenv.routines.update import do_update
-
-    if state.installstate.all_categories:
-        state.installstate.categories = state.project.get_package_categories()
-    else:
-        apply_default_categories(args, state)
-
-    do_update(
-        state.project,
-        python=state.python,
-        site_packages=state.site_packages,
-        clear=state.clear,
-        pre=state.installstate.pre,
-        pypi_mirror=state.pypi_mirror,
-        system=state.system,
-        packages=state.installstate.packages,
-        editable_packages=state.installstate.editables,
-        dev=state.installstate.dev,
-        bare=args.bare,
-        extra_pip_args=state.installstate.extra_pip_args,
-        categories=state.installstate.categories,
-        index_url=state.index,
-        quiet=state.quiet,
-        dry_run=args.dry_run,
-        outdated=args.outdated,
-        lock_only=state.installstate.lock_only,
-    )
+    pass
 
 
 def cmd_graph(args, state):
-    from pipenv.routines.graph import do_graph
-
-    do_graph(
-        state.project,
-        bare=args.bare,
-        json=args.json,
-        json_tree=args.json_tree,
-        reverse=args.reverse,
-    )
+    pass
 
 
 def cmd_open(args, state):
-    from pipenv.utils.project import ensure_project
-    from pipenv.utils.virtualenv import inline_activate_virtual_environment
-
-    ensure_project(
-        state.project,
-        python=state.python,
-        validate=False,
-        pypi_mirror=state.pypi_mirror,
-    )
-    c = subprocess_run(
-        [
-            state.project._which("python"),
-            "-c",
-            f"import {args.module}; print({args.module}.__file__)",
-        ]
-    )
-    if c.returncode:
-        console.print("Module not found!", style="red")
-        sys.exit(1)
-    if "__init__.py" in c.stdout:
-        p = Path(c.stdout.strip().rstrip("cdo")).parent
-    else:
-        p = c.stdout.strip().rstrip("cdo")
-    console.print(f"Opening {p!r} in your EDITOR.", style="bold")
-    inline_activate_virtual_environment(state.project)
-    _open_editor(p)
-    return 0
+    pass
 
 
 def cmd_sync(args, state):
-    from pipenv.routines.sync import do_sync
-
-    if state.installstate.all_categories:
-        state.installstate.categories = state.project.get_package_categories()
-    else:
-        apply_default_categories(args, state)
-
-    retcode = do_sync(
-        state.project,
-        dev=state.installstate.dev,
-        python=state.python,
-        bare=args.bare,
-        clear=state.clear,
-        pypi_mirror=state.pypi_mirror,
-        system=state.system,
-        extra_pip_args=state.installstate.extra_pip_args,
-        categories=state.installstate.categories,
-        site_packages=state.site_packages,
-    )
-    if retcode:
-        sys.exit(1)
+    pass
 
 
 def cmd_clean(args, state):
-    from pipenv.routines.clean import do_clean
-
-    do_clean(
-        state.project,
-        python=state.python,
-        dry_run=args.dry_run,
-        system=state.system,
-    )
+    pass
 
 
 def cmd_scripts(args, state):
-    if not state.project.pipfile_exists:
-        err.print("No Pipfile present at project home.")
-        sys.exit(1)
-    scripts_dict = state.project.parsed_pipfile.get("scripts", {})
-    first_column_width = max(len(word) for word in ["Command"] + list(scripts_dict))
-    second_column_width = max(
-        len(word) for word in ["Script"] + list(scripts_dict.values())
-    )
-    lines = [f"{'Command':<{first_column_width}}  Script"]
-    lines.append(f"{'-' * first_column_width}  {'-' * second_column_width}")
-    lines.extend(
-        f"{name:<{first_column_width}}  {script}" for name, script in scripts_dict.items()
-    )
-    console.print("\n".join(lines))
+    pass
 
 
 def cmd_verify(args, state):
-    if not state.project.pipfile_exists:
-        err.print("No Pipfile present at project home.")
-        sys.exit(1)
-    if state.project.get_lockfile_hash() != state.project.calculate_pipfile_hash():
-        err.print(
-            "Pipfile.lock is out-of-date. Run [yellow bold]$ pipenv lock[/yellow bold] to update."
-        )
-        sys.exit(1)
-    console.print("Pipfile.lock is up-to-date.", style="green")
-    sys.exit(0)
+    pass
 
 
 def cmd_requirements(args, state):
-    from pipenv.routines.requirements import generate_requirements
-
-    no_lock = args.no_lock
-    from_pipfile = args.from_pipfile
-    if no_lock:
-        from_pipfile = True
-
-    generate_requirements(
-        project=state.project,
-        dev=args.dev,
-        dev_only=args.dev_only,
-        include_hashes=args.hash,
-        include_markers=not args.exclude_markers,
-        categories=args.categories,
-        from_pipfile=from_pipfile,
-        no_lock=no_lock,
-        include_index=not args.exclude_index,
-    )
+    pass
 
 
 def cmd_pylock(args, state):
-    from pipenv.utils.pylock import PylockFile, PylockFormatError, PylockVersionError
-
-    project = state.project
-    groups = [g.strip() for g in args.dev_groups.split(",") if g.strip()]
-
-    if args.generate:
-        if not project.lockfile_exists:
-            err.print("[bold red]No Pipfile.lock found.[/bold red]")
-            sys.exit(1)
-        try:
-            output_path = args.output or project.pylock_output_path
-            pylock_file = PylockFile.from_lockfile(
-                lockfile_path=project.lockfile_location,
-                pylock_path=output_path,
-                dev_groups=groups,
-            )
-            pylock_file.write()
-            console.print(
-                f"[bold green]Generated pylock.toml at {output_path}[/bold green]"
-            )
-        except Exception as e:
-            err.print(f"[bold red]Error generating pylock.toml: {e}[/bold red]")
-            sys.exit(1)
-
-    elif args.from_pyproject:
-        pyproject_path = Path(project.project_directory) / "pyproject.toml"
-        if not pyproject_path.exists():
-            err.print("[bold red]No pyproject.toml found.[/bold red]")
-            sys.exit(1)
-        try:
-            output_path = args.output or project.pylock_output_path
-            pylock_file = PylockFile.from_pyproject(
-                pyproject_path=pyproject_path,
-                pylock_path=output_path,
-            )
-            pylock_file.write()
-            console.print(
-                f"[bold green]Generated pylock.toml skeleton at {output_path}[/bold green]"
-            )
-            console.print(
-                "[yellow]Note: This is a skeleton file. Package versions and hashes "
-                "need to be resolved by running 'pipenv lock'.[/yellow]"
-            )
-        except Exception as e:
-            err.print(f"[bold red]Error generating pylock.toml: {e}[/bold red]")
-            sys.exit(1)
-
-    elif args.validate:
-        pylock_path = project.pylock_location
-        if not pylock_path:
-            err.print("[bold red]No pylock.toml found.[/bold red]")
-            sys.exit(1)
-        try:
-            pylock_file = PylockFile.from_path(pylock_path)
-            console.print(
-                f"[bold green]✓ Valid pylock.toml (version {pylock_file.lock_version})[/bold green]"
-            )
-            console.print(f"  Created by: {pylock_file.created_by}")
-            console.print(f"  Packages: {len(pylock_file.packages)}")
-            if pylock_file.requires_python:
-                console.print(f"  Requires Python: {pylock_file.requires_python}")
-            if pylock_file.extras:
-                console.print(f"  Extras: {', '.join(pylock_file.extras)}")
-            if pylock_file.dependency_groups:
-                console.print(
-                    f"  Dependency Groups: {', '.join(pylock_file.dependency_groups)}"
-                )
-        except PylockVersionError as e:
-            err.print(f"[bold red]Version error: {e}[/bold red]")
-            sys.exit(1)
-        except PylockFormatError as e:
-            err.print(f"[bold red]Format error: {e}[/bold red]")
-            sys.exit(1)
-        except Exception as e:
-            err.print(f"[bold red]Error validating pylock.toml: {e}[/bold red]")
-            sys.exit(1)
-
-    else:
-        pylock_path = project.pylock_location
-        if pylock_path:
-            try:
-                pylock_file = PylockFile.from_path(pylock_path)
-                console.print(f"[bold]pylock.toml[/bold]: {pylock_path}")
-                console.print(f"  Version: {pylock_file.lock_version}")
-                console.print(f"  Created by: {pylock_file.created_by}")
-                console.print(f"  Packages: {len(pylock_file.packages)}")
-            except Exception as e:
-                err.print(f"[yellow]Found pylock.toml but could not parse: {e}[/yellow]")
-        else:
-            console.print("[dim]No pylock.toml found.[/dim]")
-            console.print(
-                "Use [bold]pipenv pylock --generate[/bold] to create one from Pipfile.lock"
-            )
-            console.print(
-                "Use [bold]pipenv pylock --from-pyproject[/bold] to create from pyproject.toml"
-            )
+    pass
 
 
 _DISPATCH = {

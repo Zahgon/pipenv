@@ -60,23 +60,15 @@ def is_valid_pylock_path(path: Path) -> bool:
 
 
 def _toml_key(key: str) -> str:
-    return key.replace("_", "-")
+    pass
 
 
 def _toml_value(key: str, value: Any) -> Any:  # noqa: ANN401
-    if isinstance(value, (Version, Marker, SpecifierSet)):
-        return str(value)
-    if isinstance(value, Sequence) and key == "environments":
-        return [str(v) for v in value]
-    return value
+    pass
 
 
 def _toml_dict_factory(data: list[tuple[str, Any]]) -> dict[str, Any]:
-    return {
-        _toml_key(key): _toml_value(key, value)
-        for key, value in data
-        if value is not None
-    }
+    pass
 
 
 def _get(d: Mapping[str, Any], expected_type: type[_T], key: str) -> _T | None:
@@ -212,9 +204,7 @@ def _get_required_sequence_of_objects(
 
 def _validate_normalized_name(name: str) -> NormalizedName:
     """Validate that a string is a NormalizedName."""
-    if not is_normalized_name(name):
-        raise PylockValidationError(f"Name {name!r} is not normalized")
-    return NormalizedName(name)
+    pass
 
 
 def _validate_path_url(path: str | None, url: str | None) -> None:
@@ -223,11 +213,7 @@ def _validate_path_url(path: str | None, url: str | None) -> None:
 
 
 def _validate_hashes(hashes: Mapping[str, Any]) -> Mapping[str, Any]:
-    if not hashes:
-        raise PylockValidationError("At least one hash must be provided")
-    if not all(isinstance(hash_val, str) for hash_val in hashes.values()):
-        raise PylockValidationError("Hash values must be strings")
-    return hashes
+    pass
 
 
 class PylockValidationError(Exception):
@@ -551,7 +537,7 @@ class Package:
 
     @property
     def is_direct(self) -> bool:
-        return not (self.sdist or self.wheels)
+        pass
 
 
 @dataclass(frozen=True, init=False)

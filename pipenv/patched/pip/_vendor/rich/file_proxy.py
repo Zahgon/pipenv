@@ -20,7 +20,7 @@ class FileProxy(io.TextIOBase):
     @property
     def rich_proxied_file(self) -> IO[str]:
         """Get proxied file."""
-        return self.__file
+        pass
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.__file, name)

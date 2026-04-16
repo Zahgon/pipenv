@@ -94,13 +94,12 @@ class SafeFileCache(SeparateBodyBaseCache):
         self._write_to_file(path, lambda f: f.write(data))
 
     def _write_from_io(self, path: str, source_file: BinaryIO) -> None:
-        self._write_to_file(path, lambda f: shutil.copyfileobj(source_file, f))
+        pass
 
     def set(
         self, key: str, value: bytes, expires: int | datetime | None = None
     ) -> None:
-        path = self._get_cache_path(key)
-        self._write(path, value)
+        pass
 
     def delete(self, key: str) -> None:
         path = self._get_cache_path(key)
@@ -124,5 +123,4 @@ class SafeFileCache(SeparateBodyBaseCache):
 
     def set_body_from_io(self, key: str, body_file: BinaryIO) -> None:
         """Set the body of the cache entry from a file object."""
-        path = self._get_cache_path(key) + ".body"
-        self._write_from_io(path, body_file)
+        pass

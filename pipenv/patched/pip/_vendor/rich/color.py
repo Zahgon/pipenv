@@ -339,12 +339,12 @@ class Color(NamedTuple):
     @property
     def is_system_defined(self) -> bool:
         """Check if the color is ultimately defined by the system."""
-        return self.system not in (ColorSystem.EIGHT_BIT, ColorSystem.TRUECOLOR)
+        pass
 
     @property
     def is_default(self) -> bool:
         """Check if the color is a default color."""
-        return self.type == ColorType.DEFAULT
+        pass
 
     def get_truecolor(
         self, theme: Optional["TerminalTheme"] = None, foreground: bool = True
@@ -570,11 +570,7 @@ class Color(NamedTuple):
 
 def parse_rgb_hex(hex_color: str) -> ColorTriplet:
     """Parse six hex characters in to RGB triplet."""
-    assert len(hex_color) == 6, "must be 6 characters"
-    color = ColorTriplet(
-        int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
-    )
-    return color
+    pass
 
 
 def blend_rgb(

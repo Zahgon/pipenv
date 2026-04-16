@@ -74,19 +74,7 @@ class DotEnv:
 
     def dict(self) -> Dict[str, Optional[str]]:
         """Return dotenv as dict"""
-        if self._dict:
-            return self._dict
-
-        raw_values = self.parse()
-
-        if self.interpolate:
-            self._dict = OrderedDict(
-                resolve_variables(raw_values, override=self.override)
-            )
-        else:
-            self._dict = OrderedDict(raw_values)
-
-        return self._dict
+        pass
 
     def parse(self) -> Iterator[Tuple[str, Optional[str]]]:
         with self._get_stream() as stream:
@@ -290,25 +278,7 @@ def resolve_variables(
     values: Iterable[Tuple[str, Optional[str]]],
     override: bool,
 ) -> Mapping[str, Optional[str]]:
-    new_values: Dict[str, Optional[str]] = {}
-
-    for name, value in values:
-        if value is None:
-            result = None
-        else:
-            atoms = parse_variables(value)
-            env: Dict[str, Optional[str]] = {}
-            if override:
-                env.update(os.environ)  # type: ignore
-                env.update(new_values)
-            else:
-                env.update(new_values)
-                env.update(os.environ)  # type: ignore
-            result = "".join(atom.resolve(env) for atom in atoms)
-
-        new_values[name] = result
-
-    return new_values
+    pass
 
 
 def _walk_to_root(path: str) -> Iterator[str]:

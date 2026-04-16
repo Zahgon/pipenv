@@ -469,13 +469,7 @@ class Setting:
 
 def is_using_venv() -> bool:
     """Check for venv-based virtual environment which sets sys.base_prefix"""
-    if getattr(sys, "real_prefix", None) is not None:
-        # virtualenv venvs
-        result = True
-    else:
-        # PEP 405 venvs
-        result = sys.prefix != getattr(sys, "base_prefix", sys.prefix)
-    return result
+    pass
 
 
 def is_in_virtualenv() -> bool:

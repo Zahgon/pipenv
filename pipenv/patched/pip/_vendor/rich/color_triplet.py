@@ -24,8 +24,7 @@ class ColorTriplet(NamedTuple):
         Returns:
             str: An rgb color, e.g. ``"rgb(100,23,255)"``.
         """
-        red, green, blue = self
-        return f"rgb({red},{green},{blue})"
+        pass
 
     @property
     def normalized(self) -> Tuple[float, float, float]:
@@ -34,5 +33,4 @@ class ColorTriplet(NamedTuple):
         Returns:
             Tuple[float, float, float]: A tuple of three normalized colour components.
         """
-        red, green, blue = self
-        return red / 255.0, green / 255.0, blue / 255.0
+        pass

@@ -155,59 +155,7 @@ def _parse_pip_conf_indexes(
     returns a single hostname, a whitespace/newline-separated list, or a Python
     list (future-proof).
     """
-    pip_conf_indexes: list[dict] = []
-    pip_conf_extra_indexes: list[dict] = []
-
-    # Build a flat merged config respecting pip's priority order (later
-    # entries, i.e. higher-priority files, override earlier ones).
-    merged_conf: dict[str, str] = {}
-    for config_dict in configuration._dictionary.values():
-        merged_conf.update(config_dict)
-
-    for section_key, value in merged_conf.items():
-        key_parts = section_key.split(".", 1)
-        if len(key_parts) <= 1:
-            continue
-        section, option = key_parts
-
-        if option not in ("index-url", "extra-index-url"):
-            continue
-
-        # Retrieve trusted-host for this section and normalise to a list of
-        # hostnames.  Pip may return a single string (possibly containing
-        # whitespace/newline-separated hostnames) or a list.
-        try:
-            trusted_hosts_raw = configuration.get_value(f"{section}.trusted-host")
-            if isinstance(trusted_hosts_raw, str):
-                trusted_hosts = trusted_hosts_raw.split()
-            else:
-                trusted_hosts = list(trusted_hosts_raw) if trusted_hosts_raw else []
-        except ConfigurationError:
-            trusted_hosts = []
-
-        if option == "index-url":
-            pip_conf_indexes.append(
-                {
-                    "url": value,
-                    "verify_ssl": not any(th in value for th in trusted_hosts) and "https://" in value,
-                    "name": f"pip_conf_index_{section}",
-                }
-            )
-        else:
-            # extra-index-url may list multiple URLs separated by whitespace
-            # or newlines (pip supports multi-line values in config files).
-            extra_urls = [u for u in value.split() if u]
-            for i, url in enumerate(extra_urls):
-                name_suffix = f"_{i}" if len(extra_urls) > 1 else ""
-                pip_conf_extra_indexes.append(
-                    {
-                        "url": url,
-                        "verify_ssl": not any(th in url for th in trusted_hosts) and "https://" in url,
-                        "name": f"pip_conf_extra_index_{section}{name_suffix}",
-                    }
-                )
-
-    return pip_conf_indexes, pip_conf_extra_indexes
+    pass
 
 
 class Project:
@@ -270,11 +218,7 @@ class Project:
 
     def path_to(self, p: str) -> Path:
         """Returns the absolute path to a given relative path."""
-        path = Path(p)
-        if path.is_absolute():
-            return path
-
-        return Path(self._original_dir) / p
+        pass
 
     def get_pipfile_section(self, section):
         """Returns the details from the section of the Project's Pipfile."""
@@ -425,24 +369,19 @@ class Project:
 
     @property
     def pipfile_exists(self) -> bool:
-        return Path(self.pipfile_location).is_file()
+        pass
 
     @property
     def required_python_version(self) -> str:
-        if self.pipfile_exists:
-            required = self.parsed_pipfile.get("requires", {}).get("python_full_version")
-            if not required:
-                required = self.parsed_pipfile.get("requires", {}).get("python_version")
-            if required != "*":
-                return required
+        pass
 
     @property
     def project_directory(self) -> str:
-        return str(Path(self.pipfile_location).parent.absolute())
+        pass
 
     @property
     def requirements_exists(self) -> bool:
-        return bool(self.requirements_location)
+        pass
 
     def _pipfile_venv_in_project(self) -> bool | None:
         """Check the [pipenv] section of the Pipfile for venv_in_project setting.
@@ -470,22 +409,7 @@ class Project:
 
     @property
     def virtualenv_exists(self) -> bool:
-        venv_path = Path(self.virtualenv_location)
-
-        scripts_dir = self.virtualenv_scripts_location
-
-        if venv_path.exists():
-            # existence of active.bat is dependent on the platform path prefix
-            # scheme, not platform itself. This handles special cases such as
-            # Cygwin/MinGW identifying as 'nt' platform, yet preferring a
-            # 'posix' path prefix scheme.
-            if scripts_dir.name == "Scripts":
-                activate_path = scripts_dir / "activate.bat"
-            else:
-                activate_path = scripts_dir / "activate"
-            return activate_path.is_file()
-
-        return False
+        pass
 
     def get_location_for_virtualenv(self) -> Path:
         # If there's no project yet, set location based on config.
@@ -527,34 +451,19 @@ class Project:
 
     @property
     def installed_packages(self):
-        return self.environment.get_installed_packages()
+        pass
 
     @property
     def installed_package_names(self):
-        return get_canonical_names([pkg.name for pkg in self.installed_packages])
+        pass
 
     @property
     def lockfile_package_names(self) -> dict[str, set[str]]:
-        results = {
-            "combined": {},
-        }
-        for category in self.get_package_categories(for_lockfile=True):
-            category_packages = get_canonical_names(self.lockfile_content[category].keys())
-            results[category] = set(category_packages)
-            results["combined"] = results["combined"] | category_packages
-        return results
+        pass
 
     @property
     def pipfile_package_names(self) -> dict[str, set[str]]:
-        result = {}
-        combined = set()
-        for category in self.get_package_categories():
-            packages = self.get_pipfile_section(category)
-            keys = get_canonical_names(packages.keys())
-            combined |= keys
-            result[category] = keys
-        result["combined"] = combined
-        return result
+        pass
 
     def get_environment(self, allow_global: bool = False) -> Environment:
         is_venv = is_in_virtualenv()
@@ -577,10 +486,7 @@ class Project:
 
     @property
     def environment(self) -> Environment:
-        if not self._environment:
-            allow_global = self.s.PIPENV_USE_SYSTEM
-            self._environment = self.get_environment(allow_global=allow_global)
-        return self._environment
+        pass
 
     def get_outdated_packages(self) -> list[importlib_metadata.Distribution]:
         return self.environment.get_outdated_packages(pre=self.pipfile.get("pre", False))
@@ -599,111 +505,43 @@ class Project:
         #   https://www.gnu.org/software/bash/manual/html_node/Double-Quotes.html
         #   http://www.tldp.org/LDP/abs/html/special-chars.html#FIELDREF
         #   https://github.com/torvalds/linux/blob/2bfe01ef/include/uapi/linux/binfmts.h#L18
-        return re.sub(r'[ &$`!*@"()\[\]\\\r\n\t]', "_", name)[0:42]
+        pass
 
     def _get_virtualenv_hash(self, name: str) -> str:
         """Get the name of the virtualenv adjusted for windows if needed
 
         Returns (name, encoded_hash)
         """
-
-        def get_name(name, location):
-            name = self._sanitize(name)
-            hash = hashlib.sha256(location.encode()).digest()[:6]
-            encoded_hash = base64.urlsafe_b64encode(hash).decode()
-            return name, encoded_hash[:8]
-
-        clean_name, encoded_hash = get_name(name, self.pipfile_location)
-        venv_name = f"{clean_name}-{encoded_hash}"
-
-        # This should work most of the time for
-        #   Case-sensitive filesystems,
-        #   In-project venv
-        #   "Proper" path casing (on non-case-sensitive filesystems).
-        if not fnmatch.fnmatch("A", "a") or self.is_venv_in_project() or get_workon_home().joinpath(venv_name).exists():
-            return clean_name, encoded_hash
-
-        # Check for different capitalization of the same project.
-        for path in get_workon_home().iterdir():
-            if not is_virtual_environment(path):
-                continue
-            try:
-                env_name, hash_ = path.name.rsplit("-", 1)
-            except ValueError:
-                continue
-            if len(hash_) != 8 or env_name.lower() != name.lower():
-                continue
-            return get_name(env_name, self.pipfile_location.replace(name, env_name))
-
-        # Use the default if no matching env exists.
-        return clean_name, encoded_hash
+        pass
 
     @property
     def virtualenv_name(self) -> str:
-        custom_name = self.s.PIPENV_CUSTOM_VENV_NAME
-        if custom_name:
-            return custom_name
-        sanitized, encoded_hash = self._get_virtualenv_hash(self.name)
-        suffix = ""
-        if self.s.PIPENV_PYTHON:
-            if Path(self.s.PIPENV_PYTHON).is_absolute():
-                suffix = f"-{Path(self.s.PIPENV_PYTHON).name}"
-            else:
-                suffix = f"-{self.s.PIPENV_PYTHON}"
-
-        # If the pipfile was located at '/home/user/MY_PROJECT/Pipfile',
-        # the name of its virtualenv will be 'my-project-wyUfYPqE'
-        return sanitized + "-" + encoded_hash + suffix
+        pass
 
     @property
     def virtualenv_location(self) -> str:
         # if VIRTUAL_ENV is set, use that.
-        virtualenv_env = os.getenv("VIRTUAL_ENV")
-        if "PIPENV_ACTIVE" not in os.environ and not self.s.PIPENV_IGNORE_VIRTUALENVS and virtualenv_env:
-            return Path(virtualenv_env)
-
-        if not self._virtualenv_location:  # Use cached version, if available.
-            if not self.project_directory:
-                raise RuntimeError("Project location not created nor specified")
-            location = self.get_location_for_virtualenv()
-            self._virtualenv_location = Path(location)
-        return self._virtualenv_location
+        pass
 
     @property
     def virtualenv_src_location(self) -> Path:
-        if self.virtualenv_location:
-            loc = Path(self.virtualenv_location) / "src"
-        else:
-            loc = Path(self.project_directory) / "src"
-        loc.mkdir(parents=True, exist_ok=True)
-        return loc
+        pass
 
     @property
     def virtualenv_scripts_location(self) -> Path:
-        return virtualenv_scripts_dir(self.virtualenv_location)
+        pass
 
     @property
     def download_location(self) -> Path:
-        if self._download_location is None:
-            loc = Path(self.virtualenv_location) / "downloads"
-            self._download_location = loc
-        # Create the directory, if it doesn't exist.
-        self._download_location.mkdir(parents=True, exist_ok=True)
-        return self._download_location
+        pass
 
     @property
     def proper_names_db_path(self) -> str:
-        if self._proper_names_db_path is None:
-            self._proper_names_db_path = Path(self.virtualenv_location, "pipenv-proper-names.txt")
-        # Ensure the parent directory exists before touching the file
-        self._proper_names_db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._proper_names_db_path.touch()  # Ensure the file exists.
-        return self._proper_names_db_path
+        pass
 
     @property
     def proper_names(self) -> str:
-        with self.proper_names_db_path.open() as f:
-            return f.read().splitlines()
+        pass
 
     def register_proper_name(self, name: str) -> None:
         """Registers a proper name to the database."""
@@ -712,74 +550,34 @@ class Project:
 
     @property
     def pipfile_location(self) -> str:
-        from pipenv.utils.pipfile import find_pipfile
-
-        if self.s.PIPENV_PIPFILE:
-            return self.s.PIPENV_PIPFILE
-
-        if self._pipfile_location is None:
-            try:
-                loc = find_pipfile(max_depth=self.s.PIPENV_MAX_DEPTH)
-            except RuntimeError:
-                loc = "Pipfile"
-            self._pipfile_location = normalize_pipfile_path(loc)
-        return self._pipfile_location
+        pass
 
     @property
     def requirements_location(self) -> str | None:
-        if self._requirements_location is None:
-            try:
-                loc = find_requirements(max_depth=self.s.PIPENV_MAX_DEPTH)
-            except RuntimeError:
-                loc = None
-            self._requirements_location = loc
-        return self._requirements_location
+        pass
 
     @property
     def parsed_pipfile(self) -> tomlkit.toml_document.TOMLDocument | TPipfile:
         """Parse Pipfile into a TOMLFile"""
-        contents = self.read_pipfile()
-        return self._parse_pipfile(contents)
+        pass
 
     def read_pipfile(self) -> str:
         # Open the pipfile, read it into memory.
-        if not self.pipfile_exists:
-            return ""
-        with open(self.pipfile_location) as f:
-            contents = f.read()
-            self._pipfile_newlines = preferred_newlines(f)
-
-        return contents
+        pass
 
     def _parse_pipfile(self, contents: str) -> tomlkit.toml_document.TOMLDocument | TPipfile:
-        try:
-            return tomlkit.parse(contents)
-        except Exception:
-            # We lose comments here, but it's for the best.)
-            # Fallback to toml parser, for large files.
-            return toml.loads(contents)
+        pass
 
     def _read_pyproject(self) -> None:
-        pyproject_path = Path(self.path_to("pyproject.toml"))
-        if pyproject_path.exists():
-            self._pyproject = toml.load(pyproject_path)
-            build_system = self._pyproject.get("build-system", None)
-            setup_py_path = Path(self.path_to("setup.py"))
-            if not setup_py_path.exists():
-                if not build_system or not build_system.get("requires"):
-                    build_system = {
-                        "requires": ["setuptools>=40.8.0", "wheel"],
-                        "build-backend": get_default_pyproject_backend(),
-                    }
-                self._build_system = build_system
+        pass
 
     @property
     def build_requires(self) -> list[str]:
-        return self._build_system.get("requires", ["setuptools>=40.8.0", "wheel"])
+        pass
 
     @property
     def build_backend(self) -> str:
-        return self._build_system.get("build-backend", get_default_pyproject_backend())
+        pass
 
     @property
     def pipfile_build_requires(self) -> list[str]:
@@ -796,43 +594,21 @@ class Project:
 
         Returns an empty list if no [build-system] section or requires key is present.
         """
-        if not self.pipfile_exists:
-            return []
-        build_system = self.parsed_pipfile.get("build-system", {})
-        return list(build_system.get("requires", []))
+        pass
 
     @property
     def settings(self) -> tomlkit.items.Table | dict[str, str | bool]:
         """A dictionary of the settings added to the Pipfile."""
-        return self.parsed_pipfile.get("pipenv", {})
+        pass
 
     def has_script(self, name: str) -> bool:
-        try:
-            return name in self.parsed_pipfile["scripts"]
-        except KeyError:
-            return False
+        pass
 
     def build_script(self, name: str, extra_args: list[str] | None = None) -> Script:
-        try:
-            script = Script.parse(self.parsed_pipfile["scripts"][name])
-        except KeyError:
-            script = Script(name)
-        if extra_args:
-            script.extend(extra_args)
-        return script
+        pass
 
     def update_settings(self, d: dict[str, str | bool]) -> None:
-        settings = self.settings
-        changed = False
-        for new in d.keys():  # noqa: PLC0206
-            if new not in settings:
-                settings[new] = d[new]
-                changed = True
-        if changed:
-            p = self.parsed_pipfile
-            p["pipenv"] = settings
-            # Write the changes to disk.
-            self.write_toml(p)
+        pass
 
     def lockfile(self, categories=None):
         """Pipfile.lock divided by PyPI and external dependencies."""
@@ -869,68 +645,46 @@ class Project:
 
     @property
     def _pipfile(self):
-        from pipenv.utils.pipfile import Pipfile as ReqLibPipfile
-
-        pf = ReqLibPipfile.load(self.pipfile_location)
-        return pf
+        pass
 
     @property
     def pylock_location(self):
         """Returns the location of the pylock.toml file, if it exists."""
-        pylock_path = find_pylock_file(self.project_directory)
-        if pylock_path:
-            return str(pylock_path)
-        return None
+        pass
 
     @property
     def pylock_exists(self):
         """Returns True if a pylock.toml file exists."""
-        return self.pylock_location is not None
+        pass
 
     @property
     def lockfile_location(self):
-        return f"{self.pipfile_location}.lock"
+        pass
 
     @property
     def lockfile_exists(self):
-        return Path(self.lockfile_location).is_file()
+        pass
 
     @property
     def any_lockfile_exists(self):
         """Returns True if either Pipfile.lock or pylock.toml exists."""
-        return self.lockfile_exists or self.pylock_exists
+        pass
 
     @property
     def lockfile_content(self):
         """Returns the content of the lockfile, checking for pylock.toml first."""
-        if self.pylock_exists or self.use_pylock:
-            try:
-                if self.pylock_exists:
-                    pylock = PylockFile.from_path(self.pylock_location)
-                    lockfile_data = pylock.convert_to_pipenv_lockfile()
-                    return lockfile_data
-            except Exception as e:
-                err.print(f"[bold yellow]Error loading pylock.toml: {e}[/bold yellow]")
-        return self.load_lockfile()
+        pass
 
     def get_editable_packages(self, category):
-        packages = {k: v for k, v in self.parsed_pipfile.get(category, {}).items() if is_editable(v)}
-        return packages
+        pass
 
     def _get_vcs_packages(self, dev=False):
-        from pipenv.utils.requirementslib import is_vcs
-
-        section = "dev-packages" if dev else "packages"
-        packages = {k: v for k, v in self.parsed_pipfile.get(section, {}).items() if is_vcs(v) or is_vcs(k)}
-        return packages or {}
+        pass
 
     @property
     def all_packages(self):
         """Returns a list of all packages."""
-        packages = {}
-        for category in self.get_package_categories():
-            packages.update(self.parsed_pipfile.get(category, {}))
-        return packages
+        pass
 
     @property
     def packages(self):
@@ -940,17 +694,11 @@ class Project:
     @property
     def dev_packages(self):
         """Returns a list of dev-packages."""
-        return self.get_pipfile_section("dev-packages")
+        pass
 
     @property
     def pipfile_is_empty(self):
-        if not self.pipfile_exists:
-            return True
-
-        if not self.read_pipfile():
-            return True
-
-        return False
+        pass
 
     def create_pipfile(self, python=None):
         """Creates the Pipfile, filled with juicy defaults."""
@@ -1106,15 +854,12 @@ class Project:
     @property
     def use_pylock(self) -> bool:
         """Returns True if pylock.toml should be generated."""
-        return self.settings.get("use_pylock", False)
+        pass
 
     @property
     def pylock_output_path(self) -> str:
         """Returns the path where pylock.toml should be written."""
-        pylock_name = self.settings.get("pylock_name")
-        if pylock_name:
-            return str(Path(self.project_directory) / f"pylock.{pylock_name}.toml")
-        return str(Path(self.project_directory) / "pylock.toml")
+        pass
 
     def write_lockfile(self, content):
         """Write out the lockfile."""
@@ -1165,33 +910,22 @@ class Project:
         return self.populate_source(self.pipfile_sources()[0])
 
     def get_index_by_name(self, index_name):
-        for source in self.pipfile_sources():
-            if source.get("name") == index_name:
-                return source
+        pass
 
     def get_index_by_url(self, index_url):
-        for source in self.pipfile_sources():
-            if source.get("url") == index_url:
-                return source
+        pass
 
     @property
     def sources(self):
-        if self.any_lockfile_exists and hasattr(self.lockfile_content, "keys"):
-            meta_ = self.lockfile_content.get("_meta", {})
-            sources_ = meta_.get("sources")
-            if sources_:
-                return sources_
-
-        else:
-            return self.pipfile_sources()
+        pass
 
     @property
     def sources_default(self):
-        return self.sources[0]
+        pass
 
     @property
     def index_urls(self):
-        return [src.get("url") for src in self.sources]
+        pass
 
     def find_source(self, source):
         """
@@ -1274,45 +1008,14 @@ class Project:
 
     def remove_package_from_pipfile(self, package_name, category):
         # Read and append Pipfile.
-        p = self.parsed_pipfile
-        section = p.get(category, {})
-        # Find the actual key in the section that matches the normalized name
-        normalized_name = pep423_name(package_name)
-        name = None
-        for key in section:
-            if pep423_name(key) == normalized_name:
-                name = key
-                break
-        if name and name in section:
-            del p[category][name]
-            if self.settings.get("sort_pipfile"):
-                p[category] = self._sort_category(p[category])
-            self.write_toml(p)
-            return True
-        return False
+        pass
 
     def reset_category_in_pipfile(self, category):
         # Read and append Pipfile.
-        p = self.parsed_pipfile
-        if category:
-            del p[category]
-            p[category] = {}
-            self.write_toml(p)
-            return True
-        return False
+        pass
 
     def remove_packages_from_pipfile(self, packages):
-        parsed = self.parsed_pipfile
-        packages = {pep423_name(pkg) for pkg in packages}
-        for category in self.get_package_categories():
-            pipfile_section = parsed.get(category, {})
-            pipfile_packages = {pep423_name(pkg_name) for pkg_name in pipfile_section}
-            to_remove = packages & pipfile_packages
-            for pkg in to_remove:
-                pkg_name = self.get_package_name_in_pipfile(pkg, category=category)
-                if pkg_name:
-                    del parsed[category][pkg_name]
-        self.write_toml(parsed)
+        pass
 
     def generate_package_pipfile_entry(self, package, pip_line, category=None, index_name=None, no_binary=False):
         """Generate a package entry from pip install line
@@ -1403,11 +1106,7 @@ class Project:
             return name, normalized_name, entry
 
     def add_package_to_pipfile(self, package, pip_line, dev=False, category=None, no_binary=False):
-        category = category if category else "dev-packages" if dev else "packages"
-
-        name, normalized_name, entry = self.generate_package_pipfile_entry(package, pip_line, category=category, no_binary=no_binary)
-
-        return self.add_pipfile_entry_to_pipfile(name, normalized_name, entry, category=category)
+        pass
 
     def add_pipfile_entry_to_pipfile(self, name, normalized_name, entry, category=None):
         newly_added = False
@@ -1767,10 +1466,7 @@ class Project:
 
     @cached_property
     def finders(self):
-        from .vendor.pythonfinder import Finder
-
-        finders = [Finder(path=str(self.virtualenv_scripts_location), global_search=gs, system=False) for gs in (False, True)]
-        return finders
+        pass
 
     @property
     def finder(self):

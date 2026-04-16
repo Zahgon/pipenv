@@ -36,17 +36,7 @@ class PyLauncherFinder(BaseFinder):
         Returns:
             True if the py launcher is available, False otherwise.
         """
-        try:
-            subprocess.run(
-                ["py", "--list-paths"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=False,
-            )
-            return True
-        except (FileNotFoundError, subprocess.SubprocessError):
-            return False
+        pass
 
     def _get_py_launcher_versions(self) -> list[tuple[str, str, str]]:
         """

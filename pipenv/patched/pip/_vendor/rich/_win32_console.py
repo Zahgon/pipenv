@@ -51,7 +51,7 @@ class WindowsCoordinates(NamedTuple):
         Returns:
             wintypes._COORD: The converted coordinates struct.
         """
-        return COORD(value.col, value.row)
+        pass
 
 
 class CONSOLE_SCREEN_BUFFER_INFO(Structure):
@@ -236,9 +236,7 @@ def GetConsoleScreenBufferInfo(
     Returns:
         CONSOLE_SCREEN_BUFFER_INFO: A CONSOLE_SCREEN_BUFFER_INFO ctype struct contain information about
             screen size, cursor position, colour attributes, and more."""
-    console_screen_buffer_info = CONSOLE_SCREEN_BUFFER_INFO()
-    _GetConsoleScreenBufferInfo(std_handle, byref(console_screen_buffer_info))
-    return console_screen_buffer_info
+    pass
 
 
 _SetConsoleCursorPosition = windll.kernel32.SetConsoleCursorPosition
@@ -380,8 +378,7 @@ class LegacyWindowsTerm:
         Returns:
             WindowsCoordinates: The current cursor position.
         """
-        coord: COORD = GetConsoleScreenBufferInfo(self._handle).dwCursorPosition
-        return WindowsCoordinates(row=coord.Y, col=coord.X)
+        pass
 
     @property
     def screen_size(self) -> WindowsCoordinates:
@@ -390,8 +387,7 @@ class LegacyWindowsTerm:
         Returns:
             WindowsCoordinates: The width and height of the screen as WindowsCoordinates.
         """
-        screen_size: COORD = GetConsoleScreenBufferInfo(self._handle).dwSize
-        return WindowsCoordinates(row=screen_size.Y, col=screen_size.X)
+        pass
 
     def write_text(self, text: str) -> None:
         """Write text directly to the terminal without any modification of styles
@@ -447,9 +443,7 @@ class LegacyWindowsTerm:
         Args:
             new_position (WindowsCoordinates): The WindowsCoordinates representing the new position of the cursor.
         """
-        if new_position.col < 0 or new_position.row < 0:
-            return
-        SetConsoleCursorPosition(self._handle, coords=new_position)
+        pass
 
     def erase_line(self) -> None:
         """Erase all content on the line the cursor is currently located at"""
@@ -513,15 +507,7 @@ class LegacyWindowsTerm:
 
     def move_cursor_forward(self) -> None:
         """Move the cursor forward a single cell. Wrap to the next line if required."""
-        row, col = self.cursor_position
-        if col == self.screen_size.col - 1:
-            row += 1
-            col = 0
-        else:
-            col += 1
-        SetConsoleCursorPosition(
-            self._handle, coords=WindowsCoordinates(row=row, col=col)
-        )
+        pass
 
     def move_cursor_to_column(self, column: int) -> None:
         """Move cursor to the column specified by the zero-based column index, staying on the same row

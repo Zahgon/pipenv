@@ -51,12 +51,12 @@ class Android(PlatformDirsABC):
     @property
     def site_cache_dir(self) -> str:
         """:return: cache directory shared by users, same as `user_cache_dir`"""
-        return self.user_cache_dir
+        pass
 
     @property
     def user_state_dir(self) -> str:
         """:return: state directory tied to the user, same as `user_data_dir`"""
-        return self.user_data_dir
+        pass
 
     @property
     def user_log_dir(self) -> str:
@@ -64,40 +64,37 @@ class Android(PlatformDirsABC):
         :return: log directory tied to the user, same as `user_cache_dir` if not opinionated else ``log`` in it,
           e.g. ``/data/user/<userid>/<packagename>/cache/<AppName>/log``
         """
-        path = self.user_cache_dir
-        if self.opinion:
-            path = os.path.join(path, "log")  # noqa: PTH118
-        return path
+        pass
 
     @property
     def user_documents_dir(self) -> str:
         """:return: documents directory tied to the user e.g. ``/storage/emulated/0/Documents``"""
-        return _android_documents_folder()
+        pass
 
     @property
     def user_downloads_dir(self) -> str:
         """:return: downloads directory tied to the user e.g. ``/storage/emulated/0/Downloads``"""
-        return _android_downloads_folder()
+        pass
 
     @property
     def user_pictures_dir(self) -> str:
         """:return: pictures directory tied to the user e.g. ``/storage/emulated/0/Pictures``"""
-        return _android_pictures_folder()
+        pass
 
     @property
     def user_videos_dir(self) -> str:
         """:return: videos directory tied to the user e.g. ``/storage/emulated/0/DCIM/Camera``"""
-        return _android_videos_folder()
+        pass
 
     @property
     def user_music_dir(self) -> str:
         """:return: music directory tied to the user e.g. ``/storage/emulated/0/Music``"""
-        return _android_music_folder()
+        pass
 
     @property
     def user_desktop_dir(self) -> str:
         """:return: desktop directory tied to the user e.g. ``/storage/emulated/0/Desktop``"""
-        return "/storage/emulated/0/Desktop"
+        pass
 
     @property
     def user_runtime_dir(self) -> str:
@@ -105,15 +102,12 @@ class Android(PlatformDirsABC):
         :return: runtime directory tied to the user, same as `user_cache_dir` if not opinionated else ``tmp`` in it,
           e.g. ``/data/user/<userid>/<packagename>/cache/<AppName>/tmp``
         """
-        path = self.user_cache_dir
-        if self.opinion:
-            path = os.path.join(path, "tmp")  # noqa: PTH118
-        return path
+        pass
 
     @property
     def site_runtime_dir(self) -> str:
         """:return: runtime directory shared by users, same as `user_runtime_dir`"""
-        return self.user_runtime_dir
+        pass
 
 
 @lru_cache(maxsize=1)
@@ -167,81 +161,31 @@ def _android_folder() -> str | None:  # noqa: C901
 @lru_cache(maxsize=1)
 def _android_documents_folder() -> str:
     """:return: documents folder for the Android OS"""
-    # Get directories with pyjnius
-    try:
-        from jnius import autoclass  # noqa: PLC0415
-
-        context = autoclass("android.content.Context")
-        environment = autoclass("android.os.Environment")
-        documents_dir: str = context.getExternalFilesDir(environment.DIRECTORY_DOCUMENTS).getAbsolutePath()
-    except Exception:  # noqa: BLE001
-        documents_dir = "/storage/emulated/0/Documents"
-
-    return documents_dir
+    pass
 
 
 @lru_cache(maxsize=1)
 def _android_downloads_folder() -> str:
     """:return: downloads folder for the Android OS"""
-    # Get directories with pyjnius
-    try:
-        from jnius import autoclass  # noqa: PLC0415
-
-        context = autoclass("android.content.Context")
-        environment = autoclass("android.os.Environment")
-        downloads_dir: str = context.getExternalFilesDir(environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
-    except Exception:  # noqa: BLE001
-        downloads_dir = "/storage/emulated/0/Downloads"
-
-    return downloads_dir
+    pass
 
 
 @lru_cache(maxsize=1)
 def _android_pictures_folder() -> str:
     """:return: pictures folder for the Android OS"""
-    # Get directories with pyjnius
-    try:
-        from jnius import autoclass  # noqa: PLC0415
-
-        context = autoclass("android.content.Context")
-        environment = autoclass("android.os.Environment")
-        pictures_dir: str = context.getExternalFilesDir(environment.DIRECTORY_PICTURES).getAbsolutePath()
-    except Exception:  # noqa: BLE001
-        pictures_dir = "/storage/emulated/0/Pictures"
-
-    return pictures_dir
+    pass
 
 
 @lru_cache(maxsize=1)
 def _android_videos_folder() -> str:
     """:return: videos folder for the Android OS"""
-    # Get directories with pyjnius
-    try:
-        from jnius import autoclass  # noqa: PLC0415
-
-        context = autoclass("android.content.Context")
-        environment = autoclass("android.os.Environment")
-        videos_dir: str = context.getExternalFilesDir(environment.DIRECTORY_DCIM).getAbsolutePath()
-    except Exception:  # noqa: BLE001
-        videos_dir = "/storage/emulated/0/DCIM/Camera"
-
-    return videos_dir
+    pass
 
 
 @lru_cache(maxsize=1)
 def _android_music_folder() -> str:
     """:return: music folder for the Android OS"""
-    # Get directories with pyjnius
-    try:
-        from jnius import autoclass  # noqa: PLC0415
-
-        context = autoclass("android.content.Context")
-        environment = autoclass("android.os.Environment")
-        music_dir: str = context.getExternalFilesDir(environment.DIRECTORY_MUSIC).getAbsolutePath()
-    except Exception:  # noqa: BLE001
-        music_dir = "/storage/emulated/0/Music"
-
-    return music_dir
+    pass
 
 
 __all__ = [

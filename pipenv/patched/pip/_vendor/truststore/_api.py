@@ -141,15 +141,7 @@ class SSLContext(_truststore_SSLContext_super_class):  # type: ignore[misc]
         server_hostname: str | None = None,
         session: ssl.SSLSession | None = None,
     ) -> ssl.SSLObject:
-        with _configure_context(self._ctx):
-            ssl_obj = self._ctx.wrap_bio(
-                incoming,
-                outgoing,
-                server_hostname=server_hostname,
-                server_side=server_side,
-                session=session,
-            )
-        return ssl_obj
+        pass
 
     def load_verify_locations(
         self,
@@ -180,16 +172,16 @@ class SSLContext(_truststore_SSLContext_super_class):  # type: ignore[misc]
         return self._ctx.set_alpn_protocols(alpn_protocols)
 
     def set_npn_protocols(self, npn_protocols: typing.Iterable[str]) -> None:
-        return self._ctx.set_npn_protocols(npn_protocols)
+        pass
 
     def set_ciphers(self, __cipherlist: str) -> None:
         return self._ctx.set_ciphers(__cipherlist)
 
     def get_ciphers(self) -> typing.Any:
-        return self._ctx.get_ciphers()
+        pass
 
     def session_stats(self) -> dict[str, int]:
-        return self._ctx.session_stats()
+        pass
 
     def cert_store_stats(self) -> dict[str, int]:
         raise NotImplementedError()
@@ -213,47 +205,43 @@ class SSLContext(_truststore_SSLContext_super_class):  # type: ignore[misc]
 
     @property
     def check_hostname(self) -> bool:
-        return self._ctx.check_hostname
+        pass
 
     @check_hostname.setter
     def check_hostname(self, value: bool) -> None:
-        self._ctx.check_hostname = value
+        pass
 
     @property
     def hostname_checks_common_name(self) -> bool:
-        return self._ctx.hostname_checks_common_name
+        pass
 
     @hostname_checks_common_name.setter
     def hostname_checks_common_name(self, value: bool) -> None:
-        self._ctx.hostname_checks_common_name = value
+        pass
 
     @property
     def keylog_filename(self) -> str:
-        return self._ctx.keylog_filename
+        pass
 
     @keylog_filename.setter
     def keylog_filename(self, value: str) -> None:
-        self._ctx.keylog_filename = value
+        pass
 
     @property
     def maximum_version(self) -> ssl.TLSVersion:
-        return self._ctx.maximum_version
+        pass
 
     @maximum_version.setter
     def maximum_version(self, value: ssl.TLSVersion) -> None:
-        _original_super_SSLContext.maximum_version.__set__(  # type: ignore[attr-defined]
-            self._ctx, value
-        )
+        pass
 
     @property
     def minimum_version(self) -> ssl.TLSVersion:
-        return self._ctx.minimum_version
+        pass
 
     @minimum_version.setter
     def minimum_version(self, value: ssl.TLSVersion) -> None:
-        _original_super_SSLContext.minimum_version.__set__(  # type: ignore[attr-defined]
-            self._ctx, value
-        )
+        pass
 
     @property
     def options(self) -> ssl.Options:
@@ -267,39 +255,35 @@ class SSLContext(_truststore_SSLContext_super_class):  # type: ignore[misc]
 
     @property
     def post_handshake_auth(self) -> bool:
-        return self._ctx.post_handshake_auth
+        pass
 
     @post_handshake_auth.setter
     def post_handshake_auth(self, value: bool) -> None:
-        self._ctx.post_handshake_auth = value
+        pass
 
     @property
     def protocol(self) -> ssl._SSLMethod:
-        return self._ctx.protocol
+        pass
 
     @property
     def security_level(self) -> int:
-        return self._ctx.security_level
+        pass
 
     @property
     def verify_flags(self) -> ssl.VerifyFlags:
-        return self._ctx.verify_flags
+        pass
 
     @verify_flags.setter
     def verify_flags(self, value: ssl.VerifyFlags) -> None:
-        _original_super_SSLContext.verify_flags.__set__(  # type: ignore[attr-defined]
-            self._ctx, value
-        )
+        pass
 
     @property
     def verify_mode(self) -> ssl.VerifyMode:
-        return self._ctx.verify_mode
+        pass
 
     @verify_mode.setter
     def verify_mode(self, value: ssl.VerifyMode) -> None:
-        _original_super_SSLContext.verify_mode.__set__(  # type: ignore[attr-defined]
-            self._ctx, value
-        )
+        pass
 
 
 # Python 3.13+ makes get_unverified_chain() a public API that only returns DER

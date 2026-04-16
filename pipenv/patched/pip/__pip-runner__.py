@@ -13,7 +13,7 @@ PYTHON_REQUIRES = (3, 9)
 
 
 def version_str(version):  # type: ignore
-    return ".".join(str(v) for v in version)
+    pass
 
 
 if sys.version_info[:2] < PYTHON_REQUIRES:
@@ -36,12 +36,7 @@ PIP_SOURCES_ROOT = dirname(dirname(__file__))
 class PipImportRedirectingFinder:
     @classmethod
     def find_spec(self, fullname, path=None, target=None):  # type: ignore
-        if fullname != "pip":
-            return None
-
-        spec = PathFinder.find_spec(fullname, [PIP_SOURCES_ROOT], target)
-        assert spec, (PIP_SOURCES_ROOT, fullname)
-        return spec
+        pass
 
 
 sys.meta_path.insert(0, PipImportRedirectingFinder())

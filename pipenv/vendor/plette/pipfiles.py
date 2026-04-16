@@ -103,25 +103,19 @@ class Pipfile(DataModel):
 
     @property
     def sources(self):
-        try:
-            return self["source"]
-        except KeyError:
-            raise AttributeError("sources")
+        pass
 
     @sources.setter
     def sources(self, value):
-        self["source"] = value
+        pass
 
     @property
     def source(self):
-        try:
-            return self["source"]
-        except KeyError:
-            raise AttributeError("source")
+        pass
 
     @source.setter
     def source(self, value):
-        self["source"] = value
+        pass
 
     @property
     def packages(self):
@@ -136,14 +130,11 @@ class Pipfile(DataModel):
 
     @property
     def dev_packages(self):
-        try:
-            return self["dev-packages"]
-        except KeyError:
-            raise AttributeError("dev-packages")
+        pass
 
     @dev_packages.setter
     def dev_packages(self, value):
-        self["dev-packages"] = value
+        pass
 
     @property
     def requires(self):
@@ -158,11 +149,8 @@ class Pipfile(DataModel):
 
     @property
     def scripts(self):
-        try:
-            return self["scripts"]
-        except KeyError:
-            raise AttributeError("scripts")
+        pass
 
     @scripts.setter
     def scripts(self, value):
-        self["scripts"] = value
+        pass

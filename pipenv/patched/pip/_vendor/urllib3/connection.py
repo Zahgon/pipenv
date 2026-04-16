@@ -146,7 +146,7 @@ class HTTPConnection(_HTTPConnection, object):
         those cases where it's appropriate (i.e., when doing DNS lookup to establish the
         actual TCP connection across which we're going to send HTTP requests).
         """
-        return self._dns_host.rstrip(".")
+        pass
 
     @host.setter
     def host(self, value):
@@ -156,7 +156,7 @@ class HTTPConnection(_HTTPConnection, object):
         We assume that only urllib3 uses the _dns_host attribute; httplib itself
         only uses `host`, and it seems reasonable that other libraries follow suit.
         """
-        self._dns_host = value
+        pass
 
     def _new_conn(self):
         """Establish a socket connection and set nodelay settings on it.

@@ -128,7 +128,7 @@ class Factory:
 
     @property
     def force_reinstall(self) -> bool:
-        return self._force_reinstall
+        pass
 
     def _fail_if_link_is_unsupported_wheel(self, link: Link) -> None:
         if not link.is_wheel:
@@ -177,12 +177,7 @@ class Factory:
         name: NormalizedName | None,
         version: Version | None,
     ) -> Candidate | None:
-        base: BaseCandidate | None = self._make_base_candidate_from_link(
-            link, template, name, version
-        )
-        if not extras or base is None:
-            return base
-        return self._make_extras_candidate(base, extras, comes_from=template)
+        pass
 
     def _make_base_candidate_from_link(
         self,
@@ -297,44 +292,7 @@ class Factory:
             return candidate
 
         def iter_index_candidate_infos() -> Iterator[IndexCandidateInfo]:
-            result = self._finder.find_best_candidate(
-                project_name=name,
-                specifier=specifier,
-                hashes=hashes,
-            )
-            icans = result.applicable_candidates
-
-            # PEP 592: Yanked releases are ignored unless the specifier
-            # explicitly pins a version (via '==' or '===') that can be
-            # solely satisfied by a yanked release.
-            all_yanked = all(ican.link.is_yanked for ican in icans)
-
-            def is_pinned(specifier: SpecifierSet) -> bool:
-                for sp in specifier:
-                    if sp.operator == "===":
-                        return True
-                    if sp.operator != "==":
-                        continue
-                    if sp.version.endswith(".*"):
-                        continue
-                    return True
-                return False
-
-            pinned = is_pinned(specifier)
-
-            # PackageFinder returns earlier versions first, so we reverse.
-            for ican in reversed(icans):
-                if not (all_yanked and pinned) and ican.link.is_yanked:
-                    continue
-                func = functools.partial(
-                    self._make_candidate_from_link,
-                    link=ican.link,
-                    extras=extras,
-                    template=template,
-                    name=name,
-                    version=ican.version,
-                )
-                yield ican.version, func
+            pass
 
         return FoundCandidates(
             iter_index_candidate_infos,
@@ -601,13 +559,7 @@ class Factory:
         hash mismatches. Furthermore, cached wheels at present have
         nondeterministic contents due to file modification times.
         """
-        if self._wheel_cache is None:
-            return None
-        return self._wheel_cache.get_cache_entry(
-            link=link,
-            package_name=name,
-            supported_tags=self._supported_tags_cache,
-        )
+        pass
 
     def get_dist_to_uninstall(self, candidate: Candidate) -> BaseDistribution | None:
         # TODO: Are there more cases this needs to return True? Editable?

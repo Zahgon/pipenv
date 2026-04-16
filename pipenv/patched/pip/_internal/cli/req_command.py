@@ -88,18 +88,7 @@ def with_cleanup(
             registry.set_delete(t, False)
 
     def wrapper(self: _CommandT, options: Values, args: list[str]) -> int:
-        assert self.tempdir_registry is not None
-        if options.no_clean:
-            configure_tempdir_registry(self.tempdir_registry)
-
-        try:
-            return func(self, options, args)
-        except PreviousBuildDirError:
-            # This kind of conflict can occur when the user passes an explicit
-            # build directory with a pre-existing folder. In that case we do
-            # not want to accidentally remove it.
-            configure_tempdir_registry(self.tempdir_registry)
-            raise
+        pass
 
     return wrapper
 

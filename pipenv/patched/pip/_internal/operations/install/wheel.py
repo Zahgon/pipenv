@@ -473,7 +473,7 @@ def _install_wheel(  # noqa: C901, PLR0915 function is too long
             changed.add(newpath)
 
     def is_dir_path(path: RecordPath) -> bool:
-        return path.endswith("/")
+        pass
 
     def assert_no_path_traversal(dest_dir_path: str, target_path: str) -> None:
         if not is_within_directory(dest_dir_path, target_path):
@@ -489,10 +489,7 @@ def _install_wheel(  # noqa: C901, PLR0915 function is too long
         zip_file: ZipFile, dest: str
     ) -> Callable[[RecordPath], File]:
         def make_root_scheme_file(record_path: RecordPath) -> File:
-            normed_path = os.path.normpath(record_path)
-            dest_path = os.path.join(dest, normed_path)
-            assert_no_path_traversal(dest, dest_path)
-            return ZipBackedFile(record_path, dest_path, zip_file)
+            pass
 
         return make_root_scheme_file
 
@@ -502,36 +499,12 @@ def _install_wheel(  # noqa: C901, PLR0915 function is too long
         scheme_paths = {key: getattr(scheme, key) for key in SCHEME_KEYS}
 
         def make_data_scheme_file(record_path: RecordPath) -> File:
-            normed_path = os.path.normpath(record_path)
-            try:
-                _, scheme_key, dest_subpath = normed_path.split(os.path.sep, 2)
-            except ValueError:
-                message = (
-                    f"Unexpected file in {wheel_path}: {record_path!r}. .data directory"
-                    " contents should be named like: '<scheme key>/<path>'."
-                )
-                raise InstallationError(message)
-
-            try:
-                scheme_path = scheme_paths[scheme_key]
-            except KeyError:
-                valid_scheme_keys = ", ".join(sorted(scheme_paths))
-                message = (
-                    f"Unknown scheme key used in {wheel_path}: {scheme_key} "
-                    f"(for file {record_path!r}). .data directory contents "
-                    f"should be in subdirectories named with a valid scheme "
-                    f"key ({valid_scheme_keys})"
-                )
-                raise InstallationError(message)
-
-            dest_path = os.path.join(scheme_path, dest_subpath)
-            assert_no_path_traversal(scheme_path, dest_path)
-            return ZipBackedFile(record_path, dest_path, zip_file)
+            pass
 
         return make_data_scheme_file
 
     def is_data_scheme_path(path: RecordPath) -> bool:
-        return path.split("/", 1)[0].endswith(".data")
+        pass
 
     paths = cast(list[RecordPath], wheel_zip.namelist())
     file_paths = filterfalse(is_dir_path, paths)
@@ -541,8 +514,7 @@ def _install_wheel(  # noqa: C901, PLR0915 function is too long
     files: Iterator[File] = map(make_root_scheme_file, root_scheme_paths)
 
     def is_script_scheme_path(path: RecordPath) -> bool:
-        parts = path.split("/", 2)
-        return len(parts) > 2 and parts[0].endswith(".data") and parts[1] == "scripts"
+        pass
 
     other_scheme_paths, script_scheme_paths = partition(
         is_script_scheme_path, data_scheme_paths
@@ -562,18 +534,7 @@ def _install_wheel(  # noqa: C901, PLR0915 function is too long
     def is_entrypoint_wrapper(file: File) -> bool:
         # EP, EP.exe and EP-script.py are scripts generated for
         # entry point EP by setuptools
-        path = file.dest_path
-        name = os.path.basename(path)
-        if name.lower().endswith(".exe"):
-            matchname = name[:-4]
-        elif name.lower().endswith("-script.py"):
-            matchname = name[:-10]
-        elif name.lower().endswith(".pya"):
-            matchname = name[:-4]
-        else:
-            matchname = name
-        # Ignore setuptools-generated scripts
-        return matchname in console or matchname in gui
+        pass
 
     script_scheme_files: Iterator[File] = map(
         make_data_scheme_file, script_scheme_paths

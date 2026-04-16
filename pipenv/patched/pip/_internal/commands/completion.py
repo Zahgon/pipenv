@@ -84,40 +84,7 @@ class CompletionCommand(Command):
     ignore_require_venv = True
 
     def add_options(self) -> None:
-        self.cmd_opts.add_option(
-            "--bash",
-            "-b",
-            action="store_const",
-            const="bash",
-            dest="shell",
-            help="Emit completion code for bash",
-        )
-        self.cmd_opts.add_option(
-            "--zsh",
-            "-z",
-            action="store_const",
-            const="zsh",
-            dest="shell",
-            help="Emit completion code for zsh",
-        )
-        self.cmd_opts.add_option(
-            "--fish",
-            "-f",
-            action="store_const",
-            const="fish",
-            dest="shell",
-            help="Emit completion code for fish",
-        )
-        self.cmd_opts.add_option(
-            "--powershell",
-            "-p",
-            action="store_const",
-            const="powershell",
-            dest="shell",
-            help="Emit completion code for powershell",
-        )
-
-        self.parser.insert_option_group(0, self.cmd_opts)
+        pass
 
     def run(self, options: Values, args: list[str]) -> int:
         """Prints the completion code of the given shell"""

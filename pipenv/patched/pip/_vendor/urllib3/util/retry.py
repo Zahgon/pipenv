@@ -35,57 +35,27 @@ _Default = object()
 class _RetryMeta(type):
     @property
     def DEFAULT_METHOD_WHITELIST(cls):
-        warnings.warn(
-            "Using 'Retry.DEFAULT_METHOD_WHITELIST' is deprecated and "
-            "will be removed in v2.0. Use 'Retry.DEFAULT_ALLOWED_METHODS' instead",
-            DeprecationWarning,
-        )
-        return cls.DEFAULT_ALLOWED_METHODS
+        pass
 
     @DEFAULT_METHOD_WHITELIST.setter
     def DEFAULT_METHOD_WHITELIST(cls, value):
-        warnings.warn(
-            "Using 'Retry.DEFAULT_METHOD_WHITELIST' is deprecated and "
-            "will be removed in v2.0. Use 'Retry.DEFAULT_ALLOWED_METHODS' instead",
-            DeprecationWarning,
-        )
-        cls.DEFAULT_ALLOWED_METHODS = value
+        pass
 
     @property
     def DEFAULT_REDIRECT_HEADERS_BLACKLIST(cls):
-        warnings.warn(
-            "Using 'Retry.DEFAULT_REDIRECT_HEADERS_BLACKLIST' is deprecated and "
-            "will be removed in v2.0. Use 'Retry.DEFAULT_REMOVE_HEADERS_ON_REDIRECT' instead",
-            DeprecationWarning,
-        )
-        return cls.DEFAULT_REMOVE_HEADERS_ON_REDIRECT
+        pass
 
     @DEFAULT_REDIRECT_HEADERS_BLACKLIST.setter
     def DEFAULT_REDIRECT_HEADERS_BLACKLIST(cls, value):
-        warnings.warn(
-            "Using 'Retry.DEFAULT_REDIRECT_HEADERS_BLACKLIST' is deprecated and "
-            "will be removed in v2.0. Use 'Retry.DEFAULT_REMOVE_HEADERS_ON_REDIRECT' instead",
-            DeprecationWarning,
-        )
-        cls.DEFAULT_REMOVE_HEADERS_ON_REDIRECT = value
+        pass
 
     @property
     def BACKOFF_MAX(cls):
-        warnings.warn(
-            "Using 'Retry.BACKOFF_MAX' is deprecated and "
-            "will be removed in v2.0. Use 'Retry.DEFAULT_BACKOFF_MAX' instead",
-            DeprecationWarning,
-        )
-        return cls.DEFAULT_BACKOFF_MAX
+        pass
 
     @BACKOFF_MAX.setter
     def BACKOFF_MAX(cls, value):
-        warnings.warn(
-            "Using 'Retry.BACKOFF_MAX' is deprecated and "
-            "will be removed in v2.0. Use 'Retry.DEFAULT_BACKOFF_MAX' instead",
-            DeprecationWarning,
-        )
-        cls.DEFAULT_BACKOFF_MAX = value
+        pass
 
 
 @six.add_metaclass(_RetryMeta)

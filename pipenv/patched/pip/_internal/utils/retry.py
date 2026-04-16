@@ -28,18 +28,6 @@ def retry(
     def wrapper(func: Callable[P, T]) -> Callable[P, T]:
 
         @functools.wraps(func)
-        def retry_wrapped(*args: P.args, **kwargs: P.kwargs) -> T:
-            # The performance counter is monotonic on all platforms we care
-            # about and has much better resolution than time.monotonic().
-            start_time = perf_counter()
-            while True:
-                try:
-                    return func(*args, **kwargs)
-                except Exception:
-                    if perf_counter() - start_time > stop_after_delay:
-                        raise
-                    sleep(wait)
-
-        return retry_wrapped
+        pass
 
     return wrapper

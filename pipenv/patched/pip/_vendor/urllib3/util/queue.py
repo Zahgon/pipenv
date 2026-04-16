@@ -13,10 +13,10 @@ class LifoQueue(queue.Queue):
         self.queue = collections.deque()
 
     def _qsize(self, len=len):
-        return len(self.queue)
+        pass
 
     def _put(self, item):
-        self.queue.append(item)
+        pass
 
     def _get(self):
         return self.queue.pop()

@@ -17,9 +17,7 @@ __all__ = ['Formatter']
 
 
 def _lookup_style(style):
-    if isinstance(style, str):
-        return get_style_by_name(style)
-    return style
+    pass
 
 
 class Formatter:
@@ -109,7 +107,7 @@ class Formatter:
         This method is called by the ``-S`` :doc:`command-line option <cmdline>`,
         the `arg` is then given by the ``-a`` option.
         """
-        return ''
+        pass
 
     def format(self, tokensource, outfile):
         """
@@ -118,10 +116,7 @@ class Formatter:
 
         Formatter options can control how exactly the tokens are converted.
         """
-        if self.encoding:
-            # wrap the outfile in a StreamWriter
-            outfile = codecs.lookup(self.encoding)[3](outfile)
-        return self.format_unencoded(tokensource, outfile)
+        pass
 
     # Allow writing Formatter[str] or Formatter[bytes]. That's equivalent to
     # Formatter. This helps when using third-party type stubs from typeshed.

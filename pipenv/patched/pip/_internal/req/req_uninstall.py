@@ -44,14 +44,7 @@ def _unique(
     fn: Callable[..., Generator[Any, None, None]],
 ) -> Callable[..., Generator[Any, None, None]]:
     @functools.wraps(fn)
-    def unique(*args: Any, **kw: Any) -> Generator[Any, None, None]:
-        seen: set[Any] = set()
-        for item in fn(*args, **kw):
-            if item not in seen:
-                seen.add(item)
-                yield item
-
-    return unique
+    pass
 
 
 @_unique
@@ -292,7 +285,7 @@ class StashedUninstallPathSet:
 
     @property
     def can_rollback(self) -> bool:
-        return bool(self._moves)
+        pass
 
 
 class UninstallPathSet:

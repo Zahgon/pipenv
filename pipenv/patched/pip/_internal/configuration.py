@@ -58,13 +58,7 @@ def _normalize_name(name: str) -> str:
 
 
 def _disassemble_key(name: str) -> list[str]:
-    if "." not in name:
-        error_message = (
-            "Key does not contain dot separated section and key. "
-            f"Perhaps you wanted to use 'global.{name}' instead?"
-        )
-        raise ConfigurationError(error_message)
-    return name.split(".", 1)
+    pass
 
 
 def get_configuration_files() -> dict[Kind, list[str]]:
@@ -129,12 +123,7 @@ class Configuration:
 
     def get_file_to_edit(self) -> str | None:
         """Returns the file with highest priority in configuration"""
-        assert self.load_only is not None, "Need to be specified a file to be editing"
-
-        try:
-            return self._get_parser_to_modify()[0]
-        except IndexError:
-            return None
+        pass
 
     def items(self) -> Iterable[tuple[str, Any]]:
         """Returns key-value pairs like dict.items() representing the loaded
@@ -144,72 +133,15 @@ class Configuration:
 
     def get_value(self, key: str) -> Any:
         """Get a value from the configuration."""
-        orig_key = key
-        key = _normalize_name(key)
-        try:
-            clean_config: dict[str, Any] = {}
-            for file_values in self._dictionary.values():
-                clean_config.update(file_values)
-            return clean_config[key]
-        except KeyError:
-            # disassembling triggers a more useful error message than simply
-            # "No such key" in the case that the key isn't in the form command.option
-            _disassemble_key(key)
-            raise ConfigurationError(f"No such key - {orig_key}")
+        pass
 
     def set_value(self, key: str, value: Any) -> None:
         """Modify a value in the configuration."""
-        key = _normalize_name(key)
-        self._ensure_have_load_only()
-
-        assert self.load_only
-        fname, parser = self._get_parser_to_modify()
-
-        if parser is not None:
-            section, name = _disassemble_key(key)
-
-            # Modify the parser and the configuration
-            if not parser.has_section(section):
-                parser.add_section(section)
-            parser.set(section, name, value)
-
-        self._config[self.load_only].setdefault(fname, {})
-        self._config[self.load_only][fname][key] = value
-        self._mark_as_modified(fname, parser)
+        pass
 
     def unset_value(self, key: str) -> None:
         """Unset a value in the configuration."""
-        orig_key = key
-        key = _normalize_name(key)
-        self._ensure_have_load_only()
-
-        assert self.load_only
-        fname, parser = self._get_parser_to_modify()
-
-        if (
-            key not in self._config[self.load_only][fname]
-            and key not in self._config[self.load_only]
-        ):
-            raise ConfigurationError(f"No such key - {orig_key}")
-
-        if parser is not None:
-            section, name = _disassemble_key(key)
-            if not (
-                parser.has_section(section) and parser.remove_option(section, name)
-            ):
-                # The option was not removed.
-                raise ConfigurationError(
-                    "Fatal Internal error [id=1]. Please report as a bug."
-                )
-
-            # The section may be empty after the option was removed.
-            if not parser.items(section):
-                parser.remove_section(section)
-            self._mark_as_modified(fname, parser)
-        try:
-            del self._config[self.load_only][fname][key]
-        except KeyError:
-            del self._config[self.load_only][key]
+        pass
 
     def save(self) -> None:
         """Save the current in-memory state."""
@@ -243,14 +175,7 @@ class Configuration:
     @property
     def _dictionary(self) -> dict[str, dict[str, Any]]:
         """A dictionary representing the loaded configuration."""
-        # NOTE: Dictionaries are not populated if not loaded. So, conditionals
-        #       are not needed here.
-        retval = {}
-
-        for variant in OVERRIDE_ORDER:
-            retval.update(self._config[variant])
-
-        return retval
+        pass
 
     def _load_config_files(self) -> None:
         """Loads configuration from configuration files"""
@@ -371,26 +296,15 @@ class Configuration:
 
     def get_values_in_config(self, variant: Kind) -> dict[str, Any]:
         """Get values present in a config file"""
-        return self._config[variant]
+        pass
 
     def _get_parser_to_modify(self) -> tuple[str, RawConfigParser]:
         # Determine which parser to modify
-        assert self.load_only
-        parsers = self._parsers[self.load_only]
-        if not parsers:
-            # This should not happen if everything works correctly.
-            raise ConfigurationError(
-                "Fatal Internal error [id=2]. Please report as a bug."
-            )
-
-        # Use the highest priority parser.
-        return parsers[-1]
+        pass
 
     # XXX: This is patched in the tests.
     def _mark_as_modified(self, fname: str, parser: RawConfigParser) -> None:
-        file_parser_tuple = (fname, parser)
-        if file_parser_tuple not in self._modified_parsers:
-            self._modified_parsers.append(file_parser_tuple)
+        pass
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self._dictionary!r})"

@@ -326,11 +326,11 @@ class Lockfile:
 
     @property
     def section_keys(self):
-        return set(self.lockfile.keys()) - {"_meta"}
+        pass
 
     @property
     def extended_keys(self):
-        return list(itertools.product(self.section_keys, ["", "vcs", "editable"]))
+        pass
 
     def get(self, k):
         return self.__getitem__(k)
@@ -521,11 +521,11 @@ class Lockfile:
         return cls.load(path, create=create)
 
     def get_section(self, name: str) -> Optional[Dict]:
-        return self.lockfile.get(name)
+        pass
 
     @property
     def develop(self) -> Dict:
-        return self.lockfile.develop
+        pass
 
     @property
     def default(self) -> Dict:
@@ -615,11 +615,7 @@ class Lockfile:
             yield install_req, pip_line_specified
 
     def requirements_list(self, category: str) -> List[Dict]:
-        if self.lockfile.get(category):
-            return [
-                {name: entry._data} for name, entry in self.lockfile[category].items()
-            ]
-        return []
+        pass
 
     def write(self) -> None:
         self.projectfile.model = copy.deepcopy(self.lockfile)
