@@ -39,7 +39,10 @@ else:  # pragma: no cover
     def _deprecated(message: str) -> object:
         def decorator(func: object) -> object:
             @functools.wraps(func)
-            pass
+            def wrapper(*args, **kwargs):
+                pass
+
+            return wrapper
 
         return decorator
 
@@ -316,9 +319,7 @@ class Version(_BaseVersion):
         self._epoch = int(match.group("epoch")) if match.group("epoch") else 0
         self._release = tuple(map(int, match.group("release").split(".")))
         self._pre = _parse_letter_version(match.group("pre_l"), match.group("pre_n"))
-        self._post = _parse_letter_version(
-            match.group("post_l"), match.group("post_n1") or match.group("post_n2")
-        )
+        self._post = _parse_letter_version(match.group("post_l"), match.group("post_n1") or match.group("post_n2"))
         self._dev = _parse_letter_version(match.group("dev_l"), match.group("dev_n"))
         self._local = _parse_local_version(match.group("local"))
 
@@ -327,11 +328,7 @@ class Version(_BaseVersion):
 
     def __replace__(self, **kwargs: Unpack[_VersionReplace]) -> Self:
         epoch = _validate_epoch(kwargs["epoch"]) if "epoch" in kwargs else self._epoch
-        release = (
-            _validate_release(kwargs["release"])
-            if "release" in kwargs
-            else self._release
-        )
+        release = _validate_release(kwargs["release"]) if "release" in kwargs else self._release
         pre = _validate_pre(kwargs["pre"]) if "pre" in kwargs else self._pre
         post = _validate_post(kwargs["post"]) if "post" in kwargs else self._post
         dev = _validate_dev(kwargs["dev"]) if "dev" in kwargs else self._dev
@@ -629,9 +626,7 @@ class _TrimmedRelease(Version):
         return rel if i == len_release else rel[:i]
 
 
-def _parse_letter_version(
-    letter: str | None, number: str | bytes | SupportsInt | None
-) -> tuple[str, int] | None:
+def _parse_letter_version(letter: str | None, number: str | bytes | SupportsInt | None) -> tuple[str, int] | None:
     pass
 
 
